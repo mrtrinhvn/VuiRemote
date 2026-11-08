@@ -1,7 +1,8 @@
 VuiRemote — Universal AI-Agent Native Remote Control & Screen Streaming Hub
-Copyright (c) 2026 VuiRemote Contributors
+Copyright (c) 2026 mrtrinhvn (Trinh Van)
 
 About the "Vui" Ecosystem:
-VuiRemote gets its "Vui" prefix from VuiCaHat (https://vuicahat.com) — an online
-singing & vocal DSP platform — alongside DanCaQuanHo (https://dancaquanho.com),
-a cultural archive dedicated to Bac Ninh Quan Ho folk music.
+I (mrtrinhvn) originally built VuiRemote alongside VuiCaHat (https://vuicahat.com) — my
+online singing & vocal DSP platform — and DanCaQuanHo (https://dancaquanho.com), a cultural
+archive dedicated to Bac Ninh Quan Ho folk music, to control my studio PCs, smart projectors,
+and Android TV boxes as well as work remotely with AI Coding Agents from my phone.

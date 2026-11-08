@@ -153,7 +153,15 @@ VuiRemote is built **AI-Agent Native** with [`AGENTS.md`](AGENTS.md), [`CLAUDE.m
 
 **VuiRemote** là hệ thống điều khiển từ xa đa thiết bị siêu nhẹ (**Zero-Latency, Zero-Client-App Multi-Device Web Remote Hub**) viết bằng **Go (Golang)** thuần kết hợp cầu nối phần cứng thực (`libXtst`, `Win32 SendInput`, `Linux /dev/uinput`). Công cụ cho phép bạn điều khiển toàn bộ thiết bị trong gia đình (**Máy tính Windows, Linux, Android TV Box, Máy chiếu thông minh**) **và làm việc từ xa với các AI Agent (Google Antigravity, Claude Code, OpenAI Codex, Cursor)** chỉ từ **một tab trình duyệt duy nhất trên điện thoại** — dù đang ở nhà hay đi ra ngoài dùng 4G/5G.
 
-> ⭐ **Nếu thấy VuiRemote hữu ích, hãy tặng dự án 1 ngôi sao (Star) ở góc trên bên phải GitHub để ủng hộ tác giả và giúp nhiều người biết đến hơn nhé!**
+> ⭐ **Nếu thấy VuiRemote hữu ích, hãy tặng dự án 1 ngôi sao (Star) ở góc trên bên phải GitHub để ủng hộ mình (`mrtrinhvn`) và giúp nhiều người biết đến hơn nhé!**
+
+---
+
+## 🎬 Video Giới Thiệu Nhanh (Bản Dọc TikTok `9:16` & Bản Ngang YouTube `16:9`)
+
+Mình đã dựng sẵn 2 bản video thuyết minh đầy đủ tính năng của **VuiRemote** (lưu trực tiếp trong repo tại thư mục [`docs/videos/`](docs/videos/)):
+- 📱 **Bản dọc `9:16` (`1080×1920` — TikTok / YouTube Shorts / Reels)**: [**Xem / Tải trực tiếp `VuiRemote_TikTok_Shorts_9x16.mp4`**](https://github.com/mrtrinhvn/VuiRemote/raw/main/docs/videos/VuiRemote_TikTok_Shorts_9x16.mp4)
+- 🖥️ **Bản ngang `16:9` (`1920×1080` — YouTube Full HD / Website)**: [**Xem / Tải trực tiếp `VuiRemote_YouTube_16x9.mp4`**](https://github.com/mrtrinhvn/VuiRemote/raw/main/docs/videos/VuiRemote_YouTube_16x9.mp4)
 
 ---
 
@@ -253,11 +261,12 @@ Bạn **không cần tự gõ lệnh cài đặt hay sửa code** — chỉ cầ
 
 ---
 
-## 💡 Câu Chuyện Tên Gọi "VuiRemote" & Tác Giả (Origin Story)
+## 💡 Câu Chuyện Tên Gọi "VuiRemote" (Chia sẻ từ mình — `mrtrinhvn`)
 
-Dự án ban đầu được xây dựng nội bộ bởi tác giả của [**Vui Ca Hát (`vuicahat.com`)**](https://vuicahat.com) — nền tảng ca hát & xử lý âm thanh Vocal DSP trực tuyến — cùng chuyên trang văn hóa [**Dân Ca Quan Họ (`dancaquanho.com`)**](https://dancaquanho.com) nhằm điều khiển nhanh dàn máy tính phòng thu, máy chiếu và Android TV Box trong gia đình cũng như làm việc từ xa với **Antigravity / AI Agent** chỉ bằng một chiếc điện thoại.
+Nhiều bạn thắc mắc vì sao dự án lại mang chữ **"Vui"** ở đầu (`VuiRemote`, `VuiTools`).
+Dự án ban đầu được mình (`mrtrinhvn`) xây dựng để phục vụ nhu cầu thực tế trong quá trình phát triển [**Vui Ca Hát (`vuicahat.com`)**](https://vuicahat.com) — nền tảng ca hát & xử lý âm thanh Vocal DSP trực tuyến — cùng chuyên trang văn hóa [**Dân Ca Quan Họ (`dancaquanho.com`)**](https://dancaquanho.com) nhằm điều khiển nhanh dàn máy tính phòng thu, máy chiếu và Android TV Box trong gia đình cũng như làm việc từ xa với **Antigravity / AI Agent** chỉ bằng một chiếc điện thoại.
 
-Nhận thấy công cụ này quá tiện lợi khi kết hợp cùng thế hệ AI Agent mới, tác giả quyết định mở toàn bộ mã nguồn dưới giấy phép **MIT License** để cộng đồng trong nước và quốc tế đều có thể tự do sử dụng và tùy biến.
+Nhận thấy công cụ này quá tiện lợi khi kết hợp cùng thế hệ AI Agent mới, mình quyết định mở toàn bộ mã nguồn dưới giấy phép **MIT License** để mọi người trong nước và quốc tế đều có thể tự do sử dụng và tùy biến cho ngôi nhà của mình.
 
-- ⭐ Nếu dự án giúp ích cho bạn, hãy bấm **Star** trên GitHub để lan tỏa dự án!
+- ⭐ Nếu dự án giúp ích cho bạn, hãy bấm **Star** trên GitHub để ủng hộ mình và lan tỏa dự án!
 - 🎶 Ghé thăm [**vuicahat.com**](https://vuicahat.com) và [**dancaquanho.com**](https://dancaquanho.com) nếu bạn yêu thích ca hát và âm nhạc dân tộc.

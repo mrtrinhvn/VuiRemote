@@ -6238,7 +6238,7 @@ const htmlPage = `<!DOCTYPE html>
       </div>
     </div>
     <div style="margin-top:14px; padding-top:8px; border-top:1px solid rgba(148,163,184,0.1); text-align:center; font-size:10.5px; color:#64748b; line-height:1.5;">
-      <strong>VuiRemote</strong> — Chia sẻ mã nguồn mở từ tác giả <a href="https://vuicahat.com" target="_blank" rel="noopener" style="color:#94a3b8; text-decoration:underline; text-underline-offset:2px;">VuiCaHat.com</a> &amp; <a href="https://dancaquanho.com" target="_blank" rel="noopener" style="color:#94a3b8; text-decoration:underline; text-underline-offset:2px;">DanCaQuanHo.com</a>
+      <strong>VuiRemote</strong> — Chia sẻ mã nguồn mở bởi mình (<strong>mrtrinhvn</strong>) • <a href="https://vuicahat.com" target="_blank" rel="noopener" style="color:#94a3b8; text-decoration:underline; text-underline-offset:2px;">VuiCaHat.com</a> &amp; <a href="https://dancaquanho.com" target="_blank" rel="noopener" style="color:#94a3b8; text-decoration:underline; text-underline-offset:2px;">DanCaQuanHo.com</a>
     </div>
   </div>
 </div>
