@@ -4849,10 +4849,11 @@ const pinLockHTML = `<!DOCTYPE html>
 </style>
 </head>
 <body>
-<div class="pin-card" id="pin-card">
+<div class="pin-card" id="pin-card" style="position:relative;">
+  <button id="pin-lang-btn" onclick="togglePinLang()" style="position:absolute; top:12px; right:12px; background:rgba(30,41,59,0.85); border:1px solid rgba(148,163,184,0.3); color:#cbd5e1; border-radius:999px; padding:3px 9px; font-size:11px; font-weight:700; cursor:pointer;">🌐 VI</button>
   <div class="lock-icon">🔒</div>
-  <div class="title">VuiRemote Bảo Mật</div>
-  <div class="desc">Kết nối từ xa qua Internet an toàn.<br>Nhập mã PIN để mở khóa điều khiển.</div>
+  <div class="title" id="pin-title">VuiRemote Bảo Mật</div>
+  <div class="desc" id="pin-desc">Kết nối từ xa qua Internet an toàn.<br>Nhập mã PIN để mở khóa điều khiển.</div>
   
   <div class="dots" id="dots">
     <div class="dot" id="dot-0"></div>
@@ -4881,6 +4882,25 @@ const pinLockHTML = `<!DOCTYPE html>
 <script>
 var currentPin = "";
 var inFlight = false;
+var pinLang = localStorage.getItem('vui_lang') || (((navigator.language || '').toLowerCase().indexOf('vi') === 0) ? 'vi' : 'en');
+
+function applyPinLang() {
+  var isEn = (pinLang === 'en');
+  var btn = document.getElementById('pin-lang-btn');
+  var title = document.getElementById('pin-title');
+  var desc = document.getElementById('pin-desc');
+  if (btn) btn.innerText = isEn ? '🌐 EN' : '🌐 VI';
+  if (title) title.innerText = isEn ? 'VuiRemote Security' : 'VuiRemote Bảo Mật';
+  if (desc) desc.innerHTML = isEn
+    ? 'Zero-Trust Remote Internet Access.<br>Enter your 4-digit PIN to unlock.'
+    : 'Kết nối từ xa qua Internet an toàn.<br>Nhập mã PIN để mở khóa điều khiển.';
+}
+function togglePinLang() {
+  pinLang = (pinLang === 'en') ? 'vi' : 'en';
+  try { localStorage.setItem('vui_lang', pinLang); } catch(e){}
+  applyPinLang();
+}
+applyPinLang();
 
 function updateDots() {
   for (var i = 0; i < 4; i++) {
@@ -4919,11 +4939,12 @@ function clearPin() {
 
 function submitPin() {
   inFlight = true;
+  var isEn = (pinLang === 'en');
   var card = document.getElementById('pin-card');
   var toast = document.getElementById('msg-toast');
   if (toast) {
     toast.style.color = "#93c5fd";
-    toast.innerText = "Đang xác thực...";
+    toast.innerText = isEn ? "Verifying PIN..." : "Đang xác thực...";
   }
   
   var xhr = new XMLHttpRequest();
@@ -4940,7 +4961,7 @@ function submitPin() {
       } catch(e){}
       if (toast) {
         toast.style.color = "#4ade80";
-        toast.innerText = "Mở khóa thành công!";
+        toast.innerText = isEn ? "Unlocked successfully!" : "Mở khóa thành công!";
       }
       setTimeout(function() { window.location.reload(); }, 350);
     } else {
@@ -4957,14 +4978,18 @@ function submitPin() {
       setTimeout(updateDots, 600);
       if (toast) {
         toast.style.color = "#f87171";
-        var errMsg = "Mã PIN không đúng, vui lòng thử lại!";
+        var errMsg = isEn ? "Incorrect PIN, please try again!" : "Mã PIN không đúng, vui lòng thử lại!";
         try {
           var errRes = JSON.parse(xhr.responseText);
           if (xhr.status === 429 || errRes.error === "locked") {
             var mins = Math.ceil((errRes.retry_after_sec || 900) / 60);
-            errMsg = "🛡️ Đã khóa tạm thời " + mins + " phút do nhập sai quá 5 lần!";
+            errMsg = isEn
+              ? ("🛡️ Temporarily locked for " + mins + " min after 5 failed attempts!")
+              : ("🛡️ Đã khóa tạm thời " + mins + " phút do nhập sai quá 5 lần!");
           } else if (typeof errRes.remaining_attempts === "number") {
-            errMsg = "Mã PIN không đúng! (Còn " + errRes.remaining_attempts + " lần thử)";
+            errMsg = isEn
+              ? ("Incorrect PIN! (" + errRes.remaining_attempts + " attempts left)")
+              : ("Mã PIN không đúng! (Còn " + errRes.remaining_attempts + " lần thử)");
           }
         } catch(e){}
         toast.innerText = errMsg;
@@ -4976,7 +5001,7 @@ function submitPin() {
     inFlight = false;
     if (toast) {
       toast.style.color = "#f87171";
-      toast.innerText = "Lỗi kết nối máy chủ!";
+      toast.innerText = isEn ? "Server connection error!" : "Lỗi kết nối máy chủ!";
     }
   };
   xhr.send();
@@ -5709,10 +5734,10 @@ const htmlPage = `<!DOCTYPE html>
               <span id="pc-win-picker-label">🪟 Cửa sổ</span>
             </button>
             <button class="screen-dev-picker-btn" id="btn-top-kbd" style="background:rgba(37,99,235,0.34); border-color:rgba(96,165,250,0.7); color:#dbeafe; padding:0 10px; font-size:11px;" onclick="toggleQuickInputBar()" title="Bật / Tắt bàn phím ảo trên màn hình (Bàn phím vật lý luôn gõ trực tiếp không cần hiện ô nhập)">
-              <span>⌨️ Bàn phím</span>
+              <span id="top-kbd-label">⌨️ Bàn phím</span>
             </button>
             <label for="vui-img-upload" class="screen-dev-picker-btn" id="btn-top-attach" style="background:rgba(15,118,110,0.34); border-color:rgba(20,184,166,0.7); color:#ccfbf1; padding:0 8px; font-size:10.5px; cursor:pointer;" onclick="recordActivity()" title="Gửi trực tiếp File (Hình ảnh, Video, Âm thanh, Tài liệu) sang máy được điều khiển">
-              <span>📎 Tệp</span>
+              <span id="top-attach-label">📎 Tệp</span>
             </label>
             <button class="screen-dev-picker-btn" id="btn-top-stream-mode" style="background:rgba(14,165,233,0.22); border-color:rgba(56,189,248,0.55); color:#bae6fd; padding:0 7px; font-size:10.5px;" onclick="cycleStreamMode()" title="Đổi kiểu truyền: Mặc định (35s tự dừng) ↔ Liên tục khi đang xem">
               <span id="top-stream-mode-label">⏱ 35s</span>
@@ -5720,8 +5745,9 @@ const htmlPage = `<!DOCTYPE html>
             <button class="screen-dev-picker-btn" id="btn-top-stream-toggle" style="background:rgba(239,68,68,0.28); border-color:rgba(248,113,113,0.6); color:#fecaca; padding:0 8px; font-size:10.5px;" onclick="toggleStreamActive()" title="Đang truyền hình — Bấm để dừng truyền">
               <span id="top-stream-toggle-label">⏹ Dừng</span>
             </button>
-            <button class="btn-wm-icon" onclick="openDrawer()" title="Thiết lập & Tiện ích">⚙️</button>
-            <button class="btn-wm-icon" onclick="openHelpModal()" title="Hướng dẫn">❓</button>
+            <button class="btn-wm-icon" id="btn-top-lang" onclick="toggleUILanguage()" style="width:auto; padding:0 6px; font-size:10px; font-weight:800; color:#bae6fd; border-color:rgba(56,189,248,0.5);" title="Switch Language (Tiếng Việt / English)">🌐 VI</button>
+            <button class="btn-wm-icon" onclick="openDrawer()" title="Settings & Utilities / Thiết lập & Tiện ích">⚙️</button>
+            <button class="btn-wm-icon" onclick="openHelpModal()" title="Guide / Hướng dẫn">❓</button>
           </div>
 
           <!-- Floating External Source Watermark Pill Góc Phải Trên -->
@@ -6273,25 +6299,29 @@ function isAutoStreamingMode() {
   return streamMode === 'auto' || streamMode === 'continuous';
 }
 
+var uiLang = localStorage.getItem('vui_lang') || (((navigator.language || '').toLowerCase().indexOf('vi') === 0) ? 'vi' : 'en');
+function isEN() { return uiLang === 'en'; }
+
 function updateStreamButtonsUI() {
   var isActive = !isSleeping;
+  var en = isEN();
 
   // 1. Nút chọn kiểu truyền trên Top Bar
   var modeBtn = document.getElementById('btn-top-stream-mode');
   var modeLbl = document.getElementById('top-stream-mode-label');
   if (modeBtn && modeLbl) {
     if (streamMode === 'continuous') {
-      modeLbl.innerHTML = '♾️ Liên tục';
+      modeLbl.innerHTML = en ? '♾️ Live' : '♾️ Liên tục';
       modeBtn.style.background = 'rgba(56,189,248,0.18)';
       modeBtn.style.borderColor = 'rgba(56,189,248,0.45)';
       modeBtn.style.color = '#7dd3fc';
-      modeBtn.title = 'Kiểu truyền: Liên tục khi đang xem (Bấm để đổi sang Mặc định 35s)';
+      modeBtn.title = en ? 'Stream Mode: Continuous Live (Click to switch to 35s Auto-Sleep)' : 'Kiểu truyền: Liên tục khi đang xem (Bấm để đổi sang Mặc định 35s)';
     } else {
       modeLbl.innerHTML = '⏱ 35s';
       modeBtn.style.background = 'rgba(255,255,255,0.08)';
       modeBtn.style.borderColor = 'rgba(255,255,255,0.18)';
       modeBtn.style.color = '#e2e8f0';
-      modeBtn.title = 'Kiểu truyền: Mặc định 35s không tương tác tự dừng (Bấm để đổi sang Liên tục)';
+      modeBtn.title = en ? 'Stream Mode: 35s Smart Auto-Sleep (Click to switch to Continuous Live)' : 'Kiểu truyền: Mặc định 35s không tương tác tự dừng (Bấm để đổi sang Liên tục)';
     }
   }
 
@@ -6300,17 +6330,17 @@ function updateStreamButtonsUI() {
   var toggleLbl = document.getElementById('top-stream-toggle-label');
   if (toggleBtn && toggleLbl) {
     if (isActive) {
-      toggleLbl.innerHTML = '⏹ Dừng';
+      toggleLbl.innerHTML = en ? '⏹ Stop' : '⏹ Dừng';
       toggleBtn.style.background = 'rgba(239,68,68,0.28)';
       toggleBtn.style.borderColor = 'rgba(248,113,113,0.65)';
       toggleBtn.style.color = '#fecaca';
-      toggleBtn.title = 'Đang truyền hình — Bấm để dừng truyền';
+      toggleBtn.title = en ? 'Streaming active — Click to pause' : 'Đang truyền hình — Bấm để dừng truyền';
     } else {
-      toggleLbl.innerHTML = '▶️ Truyền';
+      toggleLbl.innerHTML = en ? '▶️ Live' : '▶️ Truyền';
       toggleBtn.style.background = 'rgba(22,163,74,0.38)';
       toggleBtn.style.borderColor = 'rgba(74,222,128,0.75)';
       toggleBtn.style.color = '#dcfce7';
-      toggleBtn.title = 'Đã dừng truyền — Bấm để bắt đầu truyền lại';
+      toggleBtn.title = en ? 'Stream paused — Click to resume' : 'Đã dừng truyền — Bấm để bắt đầu truyền lại';
     }
   }
 
@@ -6322,15 +6352,15 @@ function updateStreamButtonsUI() {
   if (drawerModeCard && drawerModeIcon && drawerModeTitle && drawerModeDesc) {
     if (streamMode === 'continuous') {
       drawerModeIcon.innerText = '♾️';
-      drawerModeTitle.innerText = 'Kiểu: Truyền liên tục';
-      drawerModeDesc.innerHTML = 'Truyền liên tục khi đang xem<br>(Bấm để đổi sang Mặc định 35s)';
+      drawerModeTitle.innerText = en ? 'Mode: Continuous Live' : 'Kiểu: Truyền liên tục';
+      drawerModeDesc.innerHTML = en ? 'Always stream while open<br>(Tap to switch to 35s Auto-Sleep)' : 'Truyền liên tục khi đang xem<br>(Bấm để đổi sang Mặc định 35s)';
       drawerModeCard.style.borderColor = 'rgba(56,189,248,0.6)';
       drawerModeCard.style.background = 'rgba(14,165,233,0.18)';
       drawerModeTitle.style.color = '#bae6fd';
     } else {
       drawerModeIcon.innerText = '⏱';
-      drawerModeTitle.innerText = 'Kiểu: Mặc định (35s)';
-      drawerModeDesc.innerHTML = 'Không tương tác tự dừng<br>(Bấm để đổi sang Liên tục)';
+      drawerModeTitle.innerText = en ? 'Mode: Smart 35s Auto-Sleep' : 'Kiểu: Mặc định (35s)';
+      drawerModeDesc.innerHTML = en ? 'Auto-pauses after 35s idle<br>(Tap to switch to Continuous)' : 'Không tương tác tự dừng<br>(Bấm để đổi sang Liên tục)';
       drawerModeCard.style.borderColor = '#3b82f6';
       drawerModeCard.style.background = '#1e3a8a44';
       drawerModeTitle.style.color = '#f1f5f9';
@@ -6344,15 +6374,15 @@ function updateStreamButtonsUI() {
   if (drawerToggle && drawerIcon && drawerTitle && drawerDesc) {
     if (isActive) {
       drawerIcon.innerText = '⏹';
-      drawerTitle.innerText = 'Dừng truyền';
-      drawerDesc.innerText = 'Đang truyền — Bấm để dừng';
+      drawerTitle.innerText = en ? 'Pause Stream' : 'Dừng truyền';
+      drawerDesc.innerText = en ? 'Streaming — Tap to pause' : 'Đang truyền — Bấm để dừng';
       drawerToggle.style.borderColor = 'rgba(248,113,113,0.6)';
       drawerToggle.style.background = 'rgba(239,68,68,0.18)';
       drawerTitle.style.color = '#fecaca';
     } else {
       drawerIcon.innerText = '▶️';
-      drawerTitle.innerText = 'Bắt đầu truyền';
-      drawerDesc.innerText = 'Đã dừng — Bấm để truyền lại';
+      drawerTitle.innerText = en ? 'Start Stream' : 'Bắt đầu truyền';
+      drawerDesc.innerText = en ? 'Paused — Tap to resume' : 'Đã dừng — Bấm để truyền lại';
       drawerToggle.style.borderColor = 'rgba(74,222,128,0.65)';
       drawerToggle.style.background = 'rgba(22,163,74,0.22)';
       drawerTitle.style.color = '#dcfce7';
@@ -6367,16 +6397,16 @@ function updateStreamButtonsUI() {
       statusDot.style.boxShadow = 'none';
       statusDot.style.animation = 'none';
       statusDot.title = (sleepReason === 'manual')
-        ? 'Đã dừng truyền thủ công (Bấm ▶️ Truyền để tiếp tục)'
-        : 'Đã tự dừng sau 35s không tương tác (Chạm màn hình hoặc bấm ▶️ Truyền để tiếp tục)';
+        ? (en ? 'Stream paused manually (Tap ▶️ Live to resume)' : 'Đã dừng truyền thủ công (Bấm ▶️ Truyền để tiếp tục)')
+        : (en ? 'Auto-paused after 35s idle (Touch screen or tap ▶️ Live to wake)' : 'Đã tự dừng sau 35s không tương tác (Chạm màn hình hoặc bấm ▶️ Truyền để tiếp tục)');
     } else {
       var dotColor = (streamMode === 'continuous') ? '#38bdf8' : '#22c55e';
       statusDot.style.background = dotColor;
       statusDot.style.boxShadow = '0 0 8px ' + dotColor;
       statusDot.style.animation = 'blink 1.2s infinite';
       statusDot.title = (streamMode === 'continuous')
-        ? 'Đang truyền liên tục khi còn đang xem'
-        : 'Đang truyền mặc định (Tự dừng sau 35s không tương tác)';
+        ? (en ? 'Continuous Live Stream active' : 'Đang truyền liên tục khi còn đang xem')
+        : (en ? 'Smart Stream active (Auto-pauses after 35s idle)' : 'Đang truyền mặc định (Tự dừng sau 35s không tương tác)');
     }
   }
 }
@@ -8440,18 +8470,22 @@ function updatePCTouchModeUI() {
   var btn = document.getElementById('btn-pc-touch-mode');
   var lbl = document.getElementById('pc-touch-mode-label');
   if (!btn || !lbl) return;
+  var en = isEN();
+  btn.title = en
+    ? 'Cycle 1-Finger PC Touch Mode (Drag & Select / Smooth Scroll / Virtual Trackpad)'
+    : 'Đổi chế độ vuốt 1 ngón trên PC (Kéo thả / Cuộn / Bàn rê)';
   if (pcTouchMode === 'scroll') {
-    lbl.innerText = '👆 Cảm ứng chuẩn';
+    lbl.innerText = en ? '👆 1F: Scroll' : '👆 Cảm ứng chuẩn';
     btn.style.background = 'rgba(37,99,235,0.28)';
     btn.style.borderColor = 'rgba(96,165,250,0.6)';
     btn.style.color = '#bfdbfe';
   } else if (pcTouchMode === 'drag') {
-    lbl.innerText = '🖱️ 1Ngón: Kéo thả';
+    lbl.innerText = en ? '🖱️ 1F: Drag' : '🖱️ 1Ngón: Kéo thả';
     btn.style.background = 'rgba(16,185,129,0.25)';
     btn.style.borderColor = 'rgba(52,211,153,0.6)';
     btn.style.color = '#a7f3d0';
   } else {
-    lbl.innerText = '🎯 1Ngón: Bàn rê';
+    lbl.innerText = en ? '🎯 1F: Trackpad' : '🎯 1Ngón: Bàn rê';
     btn.style.background = 'rgba(147,51,234,0.28)';
     btn.style.borderColor = 'rgba(192,132,252,0.6)';
     btn.style.color = '#e9d5ff';
@@ -8460,15 +8494,16 @@ function updatePCTouchModeUI() {
 
 function cyclePCTouchMode() {
   recordActivity();
+  var en = isEN();
   if (pcTouchMode === 'scroll') {
     pcTouchMode = 'drag';
-    flashStatus('🖱️ Chế độ 1 Ngón: Kéo thả trực tiếp (Vuốt 2 ngón = Cuộn trang)', true);
+    flashStatus(en ? '🖱️ 1-Finger Mode: Direct Drag & Select (2-Finger Swipe = Scroll)' : '🖱️ Chế độ 1 Ngón: Kéo thả trực tiếp (Vuốt 2 ngón = Cuộn trang)', true);
   } else if (pcTouchMode === 'drag') {
     pcTouchMode = 'trackpad';
-    flashStatus('🎯 Chế độ 1 Ngón: Bàn rê chuột Trackpad (Vuốt 2 ngón = Cuộn)', true);
+    flashStatus(en ? '🎯 1-Finger Mode: Virtual Trackpad Cursor (2-Finger Swipe = Scroll)' : '🎯 Chế độ 1 Ngón: Bàn rê chuột Trackpad (Vuốt 2 ngón = Cuộn)', true);
   } else {
     pcTouchMode = 'scroll';
-    flashStatus('👆 Chế độ Cảm ứng chuẩn: Chạm=Click • Vuốt=Cuộn • Giữ 0.4s=Chuột phải • Giữ+Kéo=Kéo thả', true);
+    flashStatus(en ? '👆 Standard Touch Mode: Tap=Click • Swipe=Scroll • Hold 0.4s=Right-Click • Hold+Drag=Move' : '👆 Chế độ Cảm ứng chuẩn: Chạm=Click • Vuốt=Cuộn • Giữ 0.4s=Chuột phải • Giữ+Kéo=Kéo thả', true);
   }
   localStorage.setItem('vui_pc_touch_mode', pcTouchMode);
   updatePCTouchModeUI();
@@ -9180,10 +9215,35 @@ if (document.readyState === 'loading') {
 setTimeout(bindGestures, 400);
 
 var toastTimer = null;
+function trToast(text) {
+  if (!isEN() || !text) return text;
+  return String(text)
+    .replace('Đã gửi: ', 'Sent: ')
+    .replace('Lệnh: ', 'Command: ')
+    .replace('Mở: ', 'Launch: ')
+    .replace('✈️ Đang truyền ', '✈️ Uploading ')
+    .replace('✈️ Đang xử lý & truyền ảnh', '✈️ Processing & sending image')
+    .replace('✓ Đã dán Hình ảnh vào máy từ xa (Ctrl+V)!', '✓ Image pasted into remote clipboard (Ctrl+V)!')
+    .replace('✓ Đã truyền ', '✓ Transferred ')
+    .replace(' & chèn vào máy từ xa!', ' & injected into remote!')
+    .replace('🔑 Phiên kết nối cần mở khóa lại — Đang tải màn hình PIN...', '🔑 Session expired — Reloading PIN lock screen...')
+    .replace('⚠️ Lỗi truyền file: ', '⚠️ File transfer error: ')
+    .replace('⚠️ Lỗi kết nối khi truyền file', '⚠️ Connection error during file transfer')
+    .replace('🖥️ Đang xem Toàn màn hình', '🖥️ Viewing Full Desktop')
+    .replace('🎯 Đang làm việc riêng với: ', '🎯 Focused on window: ')
+    .replace('🗖 Đã phóng to: ', '🗖 Maximized: ')
+    .replace('🚀 Đang tìm & đưa cửa sổ Antigravity lên đầu...', '🚀 Finding & focusing Antigravity IDE...')
+    .replace('🚀 Đã khóa khung hình riêng vào Antigravity!', '🚀 Stream locked to Antigravity window!')
+    .replace('🖥️ Đã chuyển về Toàn màn hình', '🖥️ Switched to Full Desktop')
+    .replace('Đang gửi chữ...', 'Sending text...')
+    .replace('✓ Đã dán chữ chuẩn 100%', '✓ Text pasted 100%')
+    .replace('Đã dán từ bộ nhớ tạm', 'Pasted from clipboard')
+    .replace('Đang kiểm tra link Internet...', 'Checking Internet tunnel URL...');
+}
 function flashStatus(text, ok) {
   var toast = document.getElementById('status-toast');
   if (!toast) return;
-  toast.innerText = text;
+  toast.innerText = trToast(text);
   toast.style.borderColor = ok ? 'rgba(34, 197, 94, 0.6)' : 'rgba(239, 68, 68, 0.6)';
   toast.style.color = ok ? '#86efac' : '#fca5a5';
   toast.classList.add('show');
@@ -10076,18 +10136,24 @@ function closeWindowModal() {
   if (el) el.classList.remove('show');
 }
 
+var lastActiveWinTitle = '';
 function updateWinPickerBadge(activeTitle) {
+  if (typeof activeTitle === 'string') lastActiveWinTitle = activeTitle;
   var lbl = document.getElementById('pc-win-picker-label');
   var btn = document.getElementById('btn-pc-win-picker');
   if (!lbl || !btn) return;
-  if (activeTitle && activeTitle !== 'Toàn màn hình') {
-    var shortT = activeTitle.length > 14 ? (activeTitle.substring(0, 14) + '…') : activeTitle;
+  var en = isEN();
+  btn.title = en
+    ? 'Isolate stream & touch to a single window (Antigravity, Chrome, Terminal...) or Full Desktop'
+    : 'Làm việc riêng với từng cửa sổ chương trình (Antigravity, Chrome, Terminal...) hoặc Toàn màn hình';
+  if (lastActiveWinTitle && lastActiveWinTitle !== 'Toàn màn hình' && lastActiveWinTitle !== 'Full Desktop') {
+    var shortT = lastActiveWinTitle.length > 14 ? (lastActiveWinTitle.substring(0, 14) + '…') : lastActiveWinTitle;
     lbl.innerText = '🎯 ' + shortT;
     btn.style.background = 'rgba(245,158,11,0.32)';
     btn.style.borderColor = '#fbbf24';
     btn.style.color = '#fef08a';
   } else {
-    lbl.innerText = '🪟 Cửa sổ';
+    lbl.innerText = en ? '🪟 Windows' : '🪟 Cửa sổ';
     btn.style.background = 'rgba(59,130,246,0.25)';
     btn.style.borderColor = 'rgba(96,165,250,0.55)';
     btn.style.color = '#bfdbfe';
@@ -10427,6 +10493,7 @@ function sleepTimerPrompt() {
 
 function showTunnelInfo() {
   closeDrawer();
+  var en = isEN();
   flashStatus('Đang kiểm tra link Internet...', true);
   var xhr = new XMLHttpRequest();
   xhr.open('GET', '/api/tunnel?t=' + Date.now(), true);
@@ -10437,27 +10504,131 @@ function showTunnelInfo() {
       var directUrl = res.url || '';
       if (directUrl || shortUrl) {
         var copyUrl = shortUrl || directUrl;
-        var msg = "🌐 ĐIỀU KHIỂN TỪ XA QUA INTERNET (4G/5G MIỄN PHÍ):\n\n";
+        var msg = en
+          ? "🌐 FREE INTERNET REMOTE ACCESS (4G/5G):\n\n"
+          : "🌐 ĐIỀU KHIỂN TỪ XA QUA INTERNET (4G/5G MIỄN PHÍ):\n\n";
         if (shortUrl) {
-          msg += "📌 Link Cố Định Vĩnh Viễn (GitHub Pages):\n👉 " + shortUrl + "\n\n";
+          msg += (en ? "📌 Permanent URL (GitHub Pages):\n👉 " : "📌 Link Cố Định Vĩnh Viễn (GitHub Pages):\n👉 ") + shortUrl + "\n\n";
         }
-        msg += "🔗 Link Cloudflare Tunnel trực tiếp:\n👉 " + (directUrl || "(Đang đồng bộ...)") + "\n\n";
-        msg += "🔑 Mã PIN bảo mật của bạn: " + (res.pin || "(Xem bằng lệnh: vuiremote pin)") + "\n\n";
-        msg += "💡 Mẹo: Lưu link này ra Màn hình chính điện thoại để điều khiển Máy tính (Antigravity / Claude Code) & TV từ bất kỳ đâu!";
+        msg += (en ? "🔗 Direct Cloudflare Tunnel URL:\n👉 " : "🔗 Link Cloudflare Tunnel trực tiếp:\n👉 ") + (directUrl || "(Syncing...)") + "\n\n";
+        msg += (en ? "🔑 Security PIN: " : "🔑 Mã PIN bảo mật của bạn: ") + (res.pin || "(Run: vuiremote pin)") + "\n\n";
+        msg += en
+          ? "💡 Tip: Add this URL to your Phone Home Screen to control your PC (Antigravity / Claude Code) & TV from anywhere!"
+          : "💡 Mẹo: Lưu link này ra Màn hình chính điện thoại để điều khiển Máy tính (Antigravity / Claude Code) & TV từ bất kỳ đâu!";
         if (navigator.clipboard && navigator.clipboard.writeText) {
           navigator.clipboard.writeText(copyUrl);
-          alert(msg + "\n\n✅ Đã tự động sao chép Link vào bộ nhớ tạm!");
+          alert(msg + (en ? "\n\n✅ URL copied to clipboard!" : "\n\n✅ Đã tự động sao chép Link vào bộ nhớ tạm!"));
         } else {
-          prompt("Copy link điều khiển Internet tại đây:", copyUrl);
+          prompt(en ? "Copy Internet remote URL:" : "Copy link điều khiển Internet tại đây:", copyUrl);
         }
       } else {
-        alert("🌐 Chưa bật đường truyền Internet (Cloudflare Tunnel).\n\n👉 Cách bật miễn phí trong 3 giây:\n• Gõ lệnh: vuiremote tunnel start\n• Hoặc bảo AI Agent (Antigravity / Claude Code): 'Hãy bật Cloudflare Tunnel cho VuiRemote'");
+        alert(en
+          ? "🌐 Internet Tunnel (Cloudflare) is not running yet.\n\n👉 Start it for free in 3 seconds:\n• Run: vuiremote tunnel start\n• Or ask your AI Agent (Antigravity / Claude Code): 'Start Cloudflare Tunnel for VuiRemote'"
+          : "🌐 Chưa bật đường truyền Internet (Cloudflare Tunnel).\n\n👉 Cách bật miễn phí trong 3 giây:\n• Gõ lệnh: vuiremote tunnel start\n• Hoặc bảo AI Agent (Antigravity / Claude Code): 'Hãy bật Cloudflare Tunnel cho VuiRemote'");
       }
     } catch(e) {
-      alert("⚠️ Không lấy được thông tin tunnel: " + e);
+      alert((en ? "⚠️ Failed to fetch tunnel info: " : "⚠️ Không lấy được thông tin tunnel: ") + e);
     }
   };
   xhr.send();
+}
+
+function applyUILanguage() {
+  var en = isEN();
+  document.documentElement.lang = en ? 'en' : 'vi';
+  var langBtn = document.getElementById('btn-top-lang');
+  if (langBtn) {
+    langBtn.innerText = en ? '🌐 EN' : '🌐 VI';
+    langBtn.title = en ? 'Switch Language to Tiếng Việt (VI)' : 'Chuyển ngôn ngữ sang Tiếng Anh (English)';
+  }
+  var kbdLbl = document.getElementById('top-kbd-label');
+  var kbdBtn = document.getElementById('btn-top-kbd');
+  if (kbdLbl) kbdLbl.innerText = en ? '⌨️ Keyboard' : '⌨️ Bàn phím';
+  if (kbdBtn) kbdBtn.title = en
+    ? 'Toggle On-Screen Keyboard (Physical keyboard always types directly with zero overlay)'
+    : 'Bật / Tắt bàn phím ảo trên màn hình (Bàn phím vật lý luôn gõ trực tiếp không cần hiện ô nhập)';
+
+  var attLbl = document.getElementById('top-attach-label');
+  var attBtn = document.getElementById('btn-top-attach');
+  if (attLbl) attLbl.innerText = en ? '📎 File' : '📎 Tệp';
+  if (attBtn) attBtn.title = en
+    ? 'Teleport Files (Photos, Screenshots, Video, Audio, Docs) directly to the remote device'
+    : 'Gửi trực tiếp File (Hình ảnh, Video, Âm thanh, Tài liệu) sang máy được điều khiển';
+
+  var sleepOverlay = document.getElementById('screen-sleep-overlay');
+  if (sleepOverlay) {
+    var st = sleepOverlay.querySelector('.sleep-lock-title');
+    var sd = sleepOverlay.querySelector('.sleep-lock-desc');
+    var sb = sleepOverlay.querySelector('.sleep-unlock-btn');
+    if (st) st.innerText = en ? 'Stream Paused (Zero-CPU Sleep)' : 'Truyền hình đang tạm nghỉ';
+    if (sd) sd.innerText = en
+      ? 'Automatically paused after 35s of inactivity to save CPU & battery.'
+      : 'Đã tự động ngắt truyền hình khi không thao tác để tiết kiệm tài nguyên & chống đơ máy.';
+    if (sb) sb.innerText = en ? '🔓 Tap Anywhere to Wake & Control' : '🔓 Chạm để Mở khóa & Điều khiển';
+  }
+
+  var devModalTitle = document.querySelector('#dev-modal .drawer-title');
+  if (devModalTitle) devModalTitle.innerText = en ? '📱 Select Target Device' : '📱 Chọn Thiết Bị Điều Khiển';
+
+  var winModalTitle = document.querySelector('#win-modal .drawer-title');
+  if (winModalTitle) winModalTitle.innerText = en ? '🪟 Isolate Window (PC / Windows 11)' : '🪟 Chọn Cửa Sổ Làm Việc (PC / Windows 11)';
+  var winBtns = document.querySelectorAll('#win-modal .btn');
+  if (winBtns && winBtns.length >= 3) {
+    winBtns[0].innerText = en ? '🖥️ Full Desktop' : '🖥️ Xem Toàn Màn Hình';
+    winBtns[1].innerText = en ? '🚀 Focus Antigravity' : '🚀 Gọi Antigravity';
+  }
+
+  var drawerTitle = document.querySelector('#drawer-modal .drawer-title');
+  if (drawerTitle) drawerTitle.innerText = en ? '⚙️ Settings & Quick Utilities' : '⚙️ Thiết Lập & Tiện Ích';
+
+  var helpTitle = document.querySelector('#help-modal .help-title');
+  if (helpTitle) helpTitle.innerText = en ? '❓ Multi-Touch Gestures & Remote Control Guide' : '❓ Hướng Dẫn Cử Chỉ Đa Điểm & Điều Khiển';
+  var helpSecs = document.querySelectorAll('#help-modal .help-section');
+  if (helpSecs && helpSecs.length >= 2) {
+    if (en) {
+      helpSecs[0].innerHTML =
+        '<div class="help-sec-title">🖱️ 1. Single-Finger Touch (Click, Right-Click & Drag)</div>' +
+        '<div class="help-item">• <b>Single Tap</b>: Left-click / Select item at touch position.</div>' +
+        '<div class="help-item">• <b>Double-Tap</b>: Double-click (open folders, files, maximize windows on PC).</div>' +
+        '<div class="help-item">• <b>Long-Press (0.4s) & Release</b>: <b>Right-Click</b> on PC (or Context Menu on TV).</div>' +
+        '<div class="help-item">• <b>Hold (0.4s) & Drag</b>: Real-time <b>Drag & Drop</b> windows, select text, or move files!</div>' +
+        '<div class="help-item">• <b>[🖱️ 1F: Drag / Scroll / Trackpad]</b>: Tap the green pill on the top bar to switch 1-finger mode.</div>';
+      helpSecs[1].innerHTML =
+        '<div class="help-sec-title">✌️ 2. Multi-Touch 2 & 3-Finger Gestures (MacBook Trackpad Style)</div>' +
+        '<div class="help-item">• <b>2-Finger Parallel Swipe</b>: Smooth 4-way scrolling (Up / Down / Left / Right) at cursor.</div>' +
+        '<div class="help-item">• <b>2-Finger Tap</b>: Instant <b>Right-Click</b>.</div>' +
+        '<div class="help-item">• <b>2-Finger Pinch / Spread</b>: Hardware-crisp 2K Zoom from 1.0x up to 10.0x.</div>' +
+        '<div class="help-item">• <b>3-Finger Tap</b>: Open Mission Control / Window Overview (Super / Windows key).</div>';
+    } else {
+      helpSecs[0].innerHTML =
+        '<div class="help-sec-title">🖱️ 1. Thao Tác 1 Ngón (Chuột, Bấm Giữ & Kéo Thả)</div>' +
+        '<div class="help-item">• <b>Chạm 1 lần (Tap)</b>: Click chuột trái / Chọn mở mục tại vị trí chạm.</div>' +
+        '<div class="help-item">• <b>Chạm đúp nhanh (Double-Tap)</b>: Nhấp đúp chuột trái (mở thư mục, file, phóng to cửa sổ trên PC).</div>' +
+        '<div class="help-item">• <b>Bấm giữ 0.4s rồi nhả (Long-Press)</b>: Click <b>Chuột phải</b> trên PC (hoặc mở Menu ngữ cảnh trên TV).</div>' +
+        '<div class="help-item">• <b>Bấm giữ 0.4s rồi kéo đi (Hold & Drag)</b>: <b>Kéo thả (Drag & Drop)</b> cửa sổ, bôi đen văn bản, di chuyển file theo thời gian thực!</div>' +
+        '<div class="help-item">• <b>Nút [🖱️ 1Ngón: Kéo thả / Cuộn / Bàn rê]</b>: Trên PC, bấm nút xanh trên thanh đầu để đổi nhanh chế độ rê 1 ngón.</div>';
+      helpSecs[1].innerHTML =
+        '<div class="help-sec-title">✌️ 2. Cử Chỉ Đa Điểm 2 & 3 Ngón (Như Trackpad MacBook)</div>' +
+        '<div class="help-item">• <b>Vuốt 2 ngón song song (2-Finger Scroll)</b>: Cuộn trang mượt mà 4 chiều (Lên / Xuống / Trái / Phải) ngay tại vị trí con trỏ.</div>' +
+        '<div class="help-item">• <b>Chạm 2 ngón cùng lúc (2-Finger Tap)</b>: Click <b>Chuột phải</b> tức thì.</div>' +
+        '<div class="help-item">• <b>Chụm / Tách 2 ngón (Pinch Zoom)</b>: Phóng to / thu nhỏ màn hình từ 1.0x đến 10.0x.</div>' +
+        '<div class="help-item">• <b>Chạm 3 ngón (3-Finger Tap)</b>: Mở màn hình Đa nhiệm / Overview cửa sổ (Phím Super/Windows).</div>';
+    }
+  }
+  var helpCloseBtn = document.querySelector('#help-modal .btn');
+  if (helpCloseBtn) helpCloseBtn.innerText = en ? 'Got It — Start Controlling' : 'Đã hiểu & Bắt đầu dùng';
+
+  updateStreamButtonsUI();
+  updatePCTouchModeUI();
+  updateWinPickerBadge(lastActiveWinTitle);
+}
+
+function toggleUILanguage() {
+  recordActivity();
+  uiLang = (uiLang === 'en') ? 'vi' : 'en';
+  try { localStorage.setItem('vui_lang', uiLang); } catch(e) {}
+  applyUILanguage();
+  flashStatus(uiLang === 'en' ? '🌐 Language switched to English (EN)' : '🌐 Đã chuyển giao diện sang Tiếng Việt (VI)', true);
 }
 
 // Khởi tạo bộ đệm gõ trực tiếp với ô nhập hoàn toàn vô hình
@@ -10476,6 +10647,7 @@ if (rotMode === 'auto') enableSensorAutoRotate();
 setScreenRotation(screenRotation, false);
 switchDev(currentDev);
 setStreamMode(streamMode);
+applyUILanguage();
 loadDeviceList();
 setInterval(loadDeviceList, 15000);
 setTimeout(applyImageTransform, 100);
@@ -10496,16 +10668,16 @@ func handleCLICommand(args []string) bool {
 		fmt.Println("╔══════════════════════════════════════════════════════════════════╗")
 		fmt.Println("║   🚀 VuiRemote CLI — AI-Agent Native Multi-Device Remote Hub     ║")
 		fmt.Println("╚══════════════════════════════════════════════════════════════════╝")
-		fmt.Println("Cách dùng:")
-		fmt.Println("  vuiremote                      Chạy máy chủ VuiRemote Hub (mặc định)")
-		fmt.Println("  vuiremote status               Xem trạng thái mạng LAN, Link 4G & Mã PIN")
-		fmt.Println("  vuiremote devices              Danh sách thiết bị trong nhà (devices.json)")
-		fmt.Println("  vuiremote pin                  Xem mã PIN bảo mật Internet hiện tại")
-		fmt.Println("  vuiremote pin <4_SO>           Đổi mã PIN bảo mật mới (VD: vuiremote pin 6868)")
-		fmt.Println("  vuiremote pin --regen          Tự động sinh mã PIN 4 số ngẫu nhiên mới")
-		fmt.Println("  vuiremote tunnel               Xem Link điều khiển từ xa qua Internet (4G/5G)")
-		fmt.Println("  vuiremote tunnel start [port]  Bật miễn phí Cloudflare Quick Tunnel chạy ngầm")
-		fmt.Println("  vuiremote tunnel stop          Dừng dịch vụ Cloudflare Tunnel")
+		fmt.Println("Usage / Cách dùng:")
+		fmt.Println("  vuiremote                      Start VuiRemote Hub server (default) / Chạy máy chủ")
+		fmt.Println("  vuiremote status               Show LAN IP, 4G URL & PIN / Xem trạng thái & PIN")
+		fmt.Println("  vuiremote devices              List configured devices (devices.json) / Danh sách thiết bị")
+		fmt.Println("  vuiremote pin                  Show current Internet PIN / Xem mã PIN hiện tại")
+		fmt.Println("  vuiremote pin <4_DIGITS>       Set a new custom PIN (e.g. vuiremote pin 6868)")
+		fmt.Println("  vuiremote pin --regen          Generate a new random 4-digit PIN / Sinh PIN ngẫu nhiên")
+		fmt.Println("  vuiremote tunnel               Show Internet (4G/5G) remote URL / Xem Link điều khiển 4G")
+		fmt.Println("  vuiremote tunnel start [port]  Start free Cloudflare Quick Tunnel in background")
+		fmt.Println("  vuiremote tunnel stop          Stop Cloudflare Tunnel / Dừng dịch vụ Tunnel")
 		return true
 
 	case "pin":
@@ -10514,32 +10686,32 @@ func handleCLICommand(args []string) bool {
 			if arg == "--regen" || arg == "regen" || arg == "random" {
 				newPin := generateRandomPin()
 				if err := saveActivePin(newPin); err != nil {
-					fmt.Printf("❌ Không thể lưu mã PIN: %v\n", err)
+					fmt.Printf("❌ Failed to save PIN / Không thể lưu mã PIN: %v\n", err)
 					return true
 				}
-				fmt.Printf("🔑 Đã sinh mã PIN ngẫu nhiên mới: %s\n", newPin)
+				fmt.Printf("🔑 Generated new random PIN / Đã sinh mã PIN mới: %s\n", newPin)
 				return true
 			}
 			if len(arg) < 4 {
-				fmt.Println("⚠️ Mã PIN phải có ít nhất 4 ký tự (VD: vuiremote pin 6868)")
+				fmt.Println("⚠️ PIN must be at least 4 characters / Mã PIN phải có ít nhất 4 ký tự (e.g. vuiremote pin 6868)")
 				return true
 			}
 			if err := saveActivePin(arg); err != nil {
-				fmt.Printf("❌ Không thể lưu mã PIN: %v\n", err)
+				fmt.Printf("❌ Failed to save PIN / Không thể lưu mã PIN: %v\n", err)
 				return true
 			}
-			fmt.Printf("✅ Đã cập nhật mã PIN bảo mật Internet thành: %s\n", arg)
+			fmt.Printf("✅ Updated Internet security PIN / Đã cập nhật mã PIN thành: %s\n", arg)
 			return true
 		}
-		fmt.Printf("🔑 Mã PIN bảo mật Internet hiện tại: %s\n", getActivePin())
-		fmt.Println("   (Chỉ hỏi mã PIN khi truy cập từ ngoài Internet 4G/5G; miễn hỏi PIN khi dùng Wi-Fi trong nhà)")
+		fmt.Printf("🔑 Current Internet Security PIN / Mã PIN hiện tại: %s\n", getActivePin())
+		fmt.Println("   (Required over 4G/5G Internet; bypassed automatically on trusted home LAN Wi-Fi)")
 		return true
 
 	case "devices":
 		initDefaultDevices()
 		deviceRegistryMu.RLock()
 		defer deviceRegistryMu.RUnlock()
-		fmt.Printf("📱 Danh sách thiết bị (%s):\n", getDevicesFilePath())
+		fmt.Printf("📱 Devices / Danh sách thiết bị (%s):\n", getDevicesFilePath())
 		for _, d := range deviceRegistry {
 			if d != nil {
 				fmt.Printf("  • %-10s | %s %-18s | %-19s | MAC: %s\n", d.ID, d.Icon, d.Name, d.Host, d.MAC)
@@ -10563,41 +10735,41 @@ func handleCLICommand(args []string) bool {
 				_ = os.MkdirAll(filepath.Dir(logFile), 0755)
 				shCmd := fmt.Sprintf("nohup cloudflared tunnel --url http://127.0.0.1:%s --no-autoupdate >%s 2>&1 &", port, logFile)
 				_ = exec.Command("sh", "-c", shCmd).Start()
-				fmt.Printf("⏳ Đang khởi tạo đường truyền Cloudflare Tunnel miễn phí tới cổng :%s...\n", port)
+				fmt.Printf("⏳ Starting free Cloudflare Quick Tunnel to port :%s / Đang khởi tạo đường truyền...\n", port)
 				for i := 0; i < 12; i++ {
 					time.Sleep(1 * time.Second)
 					if u := readActiveTunnelURL(); u != "" {
 						syncTunnelURLToGist()
 						cfg := readGistSyncConfig()
-						fmt.Printf("✅ Đã bật điều khiển qua Internet thành công!\n")
+						fmt.Printf("✅ Internet Remote Access Active / Đã bật điều khiển qua Internet thành công!\n")
 						if cfg.ShortURL != "" {
-							fmt.Printf("   📌 Link cố định vĩnh viễn : %s\n", cfg.ShortURL)
+							fmt.Printf("   📌 Permanent URL (GitHub Pages) : %s\n", cfg.ShortURL)
 						}
-						fmt.Printf("   🔗 Link trực tiếp         : %s\n", u)
-						fmt.Printf("   🔑 Mã PIN mở khóa         : %s\n", getActivePin())
+						fmt.Printf("   🔗 Direct Cloudflare URL        : %s\n", u)
+						fmt.Printf("   🔑 Unlock PIN                   : %s\n", getActivePin())
 						return true
 					}
 				}
-				fmt.Printf("⚠️ Đã chạy nền cloudflared (log: %s). Hãy gõ 'vuiremote tunnel' sau vài giây để xem link.\n", logFile)
+				fmt.Printf("⚠️ cloudflared started in background (log: %s). Run 'vuiremote tunnel' in a few seconds.\n", logFile)
 				return true
 			} else if sub == "stop" {
 				_ = exec.Command("killall", "cloudflared").Run()
-				fmt.Println("🛑 Đã dừng Cloudflare Tunnel.")
+				fmt.Println("🛑 Stopped Cloudflare Tunnel / Đã dừng Cloudflare Tunnel.")
 				return true
 			}
 		}
 		u := readActiveTunnelURL()
 		cfg := readGistSyncConfig()
-		fmt.Println("🌐 Trạng thái Điều khiển qua Internet (4G/5G):")
+		fmt.Println("🌐 Internet Remote Status (4G/5G) / Trạng thái Điều khiển qua Internet:")
 		if cfg.ShortURL != "" {
-			fmt.Printf("  📌 Link cố định (GitHub Pages) : %s\n", cfg.ShortURL)
+			fmt.Printf("  📌 Permanent URL (GitHub Pages) : %s\n", cfg.ShortURL)
 		}
 		if u != "" {
-			fmt.Printf("  🔗 Link Cloudflare hiện tại    : %s\n", u)
+			fmt.Printf("  🔗 Active Cloudflare URL        : %s\n", u)
 		} else {
-			fmt.Println("  🔗 Link Cloudflare hiện tại    : (Chưa bật — gõ 'vuiremote tunnel start' để bật)")
+			fmt.Println("  🔗 Active Cloudflare URL        : (Stopped — run 'vuiremote tunnel start' to enable)")
 		}
-		fmt.Printf("  🔑 Mã PIN bảo mật              : %s\n", getActivePin())
+		fmt.Printf("  🔑 Security PIN                 : %s\n", getActivePin())
 		return true
 
 	case "status":
@@ -10614,19 +10786,19 @@ func handleCLICommand(args []string) bool {
 		u := readActiveTunnelURL()
 		cfg := readGistSyncConfig()
 		fmt.Println("╔══════════════════════════════════════════════════════════════════╗")
-		fmt.Println("║                 📡 TRẠNG THÁI HỆ THỐNG VUIREMOTE                 ║")
+		fmt.Println("║           📡 VUIREMOTE SYSTEM STATUS / TRẠNG THÁI HỆ THỐNG       ║")
 		fmt.Println("╚══════════════════════════════════════════════════════════════════╝")
-		fmt.Printf("  🏠 Địa chỉ mạng LAN (Wi-Fi)    : http://%s:%s (Miễn hỏi PIN)\n", ip, port)
+		fmt.Printf("  🏠 Home LAN URL (Wi-Fi)        : http://%s:%s (PIN-free / Miễn hỏi PIN)\n", ip, port)
 		if cfg.ShortURL != "" {
-			fmt.Printf("  📌 Link Internet Cố định (4G)  : %s\n", cfg.ShortURL)
+			fmt.Printf("  📌 Permanent 4G URL            : %s\n", cfg.ShortURL)
 		}
 		if u != "" {
-			fmt.Printf("  🌐 Link Cloudflare Trực tiếp   : %s\n", u)
+			fmt.Printf("  🌐 Direct Cloudflare URL       : %s\n", u)
 		} else {
-			fmt.Println("  🌐 Link Cloudflare Trực tiếp   : (Chưa bật — chạy 'vuiremote tunnel start')")
+			fmt.Println("  🌐 Direct Cloudflare URL       : (Stopped — run 'vuiremote tunnel start')")
 		}
-		fmt.Printf("  🔑 Mã PIN bảo mật (ngoài 4G)   : %s (Chống dò PIN: khóa 15p sau 5 lần sai)\n", getActivePin())
-		fmt.Printf("  📂 File cấu hình thiết bị      : %s (%d thiết bị)\n", getDevicesFilePath(), len(deviceRegistry))
+		fmt.Printf("  🔑 Internet Security PIN       : %s (Brute-force lock: 15m after 5 tries)\n", getActivePin())
+		fmt.Printf("  📂 Device Registry File        : %s (%d devices)\n", getDevicesFilePath(), len(deviceRegistry))
 		return true
 	}
 	return false

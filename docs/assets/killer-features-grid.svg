@@ -1,0 +1,164 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1120 560" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#070b14"/>
+      <stop offset="50%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#090d16"/>
+    </linearGradient>
+    <linearGradient id="cardBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e293b" stop-opacity="0.72"/>
+      <stop offset="100%" stop-color="#0f172a" stop-opacity="0.92"/>
+    </linearGradient>
+    <linearGradient id="titleGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="50%" stop-color="#34d399"/>
+      <stop offset="100%" stop-color="#a78bfa"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1120" height="560" rx="20" fill="url(#bg)" stroke="#1e293b" stroke-width="2"/>
+
+  <!-- Header -->
+  <text x="560" y="38" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="21" font-weight="800" fill="url(#titleGrad)">
+    ⚡ 8 Unique Engineering Breakthroughs — 8 Đột Phá Độc Bản Của VuiRemote
+  </text>
+  <text x="560" y="60" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="12.5" font-weight="500" fill="#94a3b8">
+    Zero Client App • Single Static Binary • Bilingual UI (EN / VI) • Designed for AI Agents (Antigravity, Claude Code, Cursor) &amp; Smart Home
+  </text>
+
+  <!-- Row 1, Card 1: 1-Tap File & 100MB+ Video Teleport -->
+  <g transform="translate(24, 80)">
+    <rect width="256" height="212" rx="14" fill="url(#cardBg)" stroke="#14b8a6" stroke-opacity="0.55" stroke-width="1.5"/>
+    <rect x="14" y="14" width="38" height="38" rx="10" fill="#0f766e" fill-opacity="0.45" stroke="#2dd4bf" stroke-width="1"/>
+    <text x="33" y="39" text-anchor="middle" font-size="20">📎</text>
+    <text x="62" y="29" font-family="system-ui, sans-serif" font-size="13.5" font-weight="800" fill="#5eead4">1-Tap File &amp; Video Teleport</text>
+    <text x="62" y="46" font-family="system-ui, sans-serif" font-size="11.5" font-weight="700" fill="#99f6e4">Bắn Ảnh, File &amp; Video &gt;100MB</text>
+    <text x="16" y="72" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">• Photos auto-paste (<tspan fill="#34d399" font-weight="700">Ctrl+V</tspan>) into</text>
+    <text x="24" y="88" font-family="system-ui, sans-serif" font-size="11" fill="#cbd5e1">Antigravity / Claude Code / Cursor</text>
+    <text x="16" y="108" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">• Auto-converts iPhone <tspan fill="#fbbf24" font-weight="700">.MOV ➔ .MP4</tspan></text>
+    <text x="16" y="128" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">• <tspan fill="#38bdf8" font-weight="700">20MB Chunked Stream</tspan> bypasses</text>
+    <text x="24" y="144" font-family="system-ui, sans-serif" font-size="11" fill="#cbd5e1">Cloudflare's 100MB limit effortlessly</text>
+    <rect x="16" y="164" width="224" height="34" rx="8" fill="#042f2e" stroke="#14b8a6" stroke-opacity="0.4"/>
+    <text x="128" y="179" text-anchor="middle" font-family="monospace" font-size="10" fill="#5eead4">Phone ➔ 20MB Chunks ➔ PC/TV</text>
+    <text x="128" y="192" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9.5" fill="#99f6e4">Tự dán ảnh vào khung chat AI tức thì</text>
+  </g>
+
+  <!-- Row 1, Card 2: Per-Window Isolation & Antigravity Focus -->
+  <g transform="translate(296, 80)">
+    <rect width="256" height="212" rx="14" fill="url(#cardBg)" stroke="#3b82f6" stroke-opacity="0.55" stroke-width="1.5"/>
+    <rect x="14" y="14" width="38" height="38" rx="10" fill="#1d4ed8" fill-opacity="0.45" stroke="#60a5fa" stroke-width="1"/>
+    <text x="33" y="39" text-anchor="middle" font-size="20">🪟</text>
+    <text x="62" y="29" font-family="system-ui, sans-serif" font-size="13.5" font-weight="800" fill="#93c5fd">Per-Window Isolation</text>
+    <text x="62" y="46" font-family="system-ui, sans-serif" font-size="11.5" font-weight="700" fill="#bfdbfe">Tách Riêng Cửa Sổ &amp; Gọi AI</text>
+    <text x="16" y="72" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">• Crops live stream &amp; touch strictly to</text>
+    <text x="24" y="88" font-family="system-ui, sans-serif" font-size="11" fill="#cbd5e1">a single chosen app window</text>
+    <text x="16" y="108" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">• 1-Tap <tspan fill="#60a5fa" font-weight="700">🚀 Focus Antigravity</tspan> brings</text>
+    <text x="24" y="124" font-family="system-ui, sans-serif" font-size="11" fill="#cbd5e1">your AI IDE front-and-center</text>
+    <text x="16" y="144" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">• Full 2K <tspan fill="#38bdf8" font-weight="700">2560×1440 yuvj444p</tspan> clarity</text>
+    <rect x="16" y="164" width="224" height="34" rx="8" fill="#172554" stroke="#3b82f6" stroke-opacity="0.4"/>
+    <text x="128" y="179" text-anchor="middle" font-family="monospace" font-size="10" fill="#93c5fd">[🪟 Windows] ➔ [🚀 Antigravity]</text>
+    <text x="128" y="192" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9.5" fill="#bfdbfe">Màn đt 6 inch nhìn rõ từng dòng code</text>
+  </g>
+
+  <!-- Row 1, Card 3: Zero-Occlusion Vietnamese & Intl IME -->
+  <g transform="translate(568, 80)">
+    <rect width="256" height="212" rx="14" fill="url(#cardBg)" stroke="#8b5cf6" stroke-opacity="0.55" stroke-width="1.5"/>
+    <rect x="14" y="14" width="38" height="38" rx="10" fill="#6d28d9" fill-opacity="0.45" stroke="#a78bfa" stroke-width="1"/>
+    <text x="33" y="39" text-anchor="middle" font-size="20">⌨️</text>
+    <text x="62" y="29" font-family="system-ui, sans-serif" font-size="13.5" font-weight="800" fill="#c4b5fd">Zero-Occlusion Live IME</text>
+    <text x="62" y="46" font-family="system-ui, sans-serif" font-size="11.5" font-weight="700" fill="#ddd6fe">Gõ Phím Vô Hình &amp; Telex Chuẩn</text>
+    <text x="16" y="72" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">• Type on physical or mobile keyboard</text>
+    <text x="24" y="88" font-family="system-ui, sans-serif" font-size="11" fill="#cbd5e1">with <tspan fill="#c4b5fd" font-weight="700">zero popup text-box</tspan> blocking view</text>
+    <text x="16" y="108" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">• Differential two-sided span-sync for</text>
+    <text x="24" y="124" font-family="system-ui, sans-serif" font-size="11" fill="#cbd5e1">100% accurate Vietnamese Telex/UTF-8</text>
+    <text x="16" y="144" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">• Built-in Transparent Landscape Kbd</text>
+    <rect x="16" y="164" width="224" height="34" rx="8" fill="#2e1065" stroke="#8b5cf6" stroke-opacity="0.4"/>
+    <text x="128" y="179" text-anchor="middle" font-family="monospace" font-size="10" fill="#c4b5fd">GTK3 / Win32 Clipboard + SpanDiff</text>
+    <text x="128" y="192" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9.5" fill="#ddd6fe">Gõ Tiếng Việt &amp; Voice-to-Text mượt 100%</text>
+  </g>
+
+  <!-- Row 1, Card 4: 3 Touch Modes + Multi-Touch MacBook Gestures -->
+  <g transform="translate(840, 80)">
+    <rect width="256" height="212" rx="14" fill="url(#cardBg)" stroke="#10b981" stroke-opacity="0.55" stroke-width="1.5"/>
+    <rect x="14" y="14" width="38" height="38" rx="10" fill="#047857" fill-opacity="0.45" stroke="#34d399" stroke-width="1"/>
+    <text x="33" y="39" text-anchor="middle" font-size="20">🖱️</text>
+    <text x="62" y="29" font-family="system-ui, sans-serif" font-size="13.5" font-weight="800" fill="#6ee7b7">3 Touch Modes &amp; Gestures</text>
+    <text x="62" y="46" font-family="system-ui, sans-serif" font-size="11.5" font-weight="700" fill="#a7f3d0">3 Chế Độ Cảm Ứng &amp; Đa Điểm</text>
+    <text x="16" y="72" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">• 1-Finger: <tspan fill="#34d399" font-weight="700">Drag &amp; Select</tspan>, <tspan fill="#60a5fa" font-weight="700">Scroll</tspan>,</text>
+    <text x="24" y="88" font-family="system-ui, sans-serif" font-size="11" fill="#cbd5e1">or <tspan fill="#c084fc" font-weight="700">Virtual Trackpad</tspan> cursor</text>
+    <text x="16" y="108" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">• 2-Finger Scroll &amp; Tap Right-Click</text>
+    <text x="16" y="128" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">• 2-Finger Pinch Zoom up to <tspan fill="#fbbf24" font-weight="700">10.0x</tspan></text>
+    <text x="16" y="146" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">• 3-Finger Tap ➔ Mission Control</text>
+    <rect x="16" y="164" width="224" height="34" rx="8" fill="#064e3b" stroke="#10b981" stroke-opacity="0.4"/>
+    <text x="128" y="179" text-anchor="middle" font-family="monospace" font-size="10" fill="#6ee7b7">60Hz libXtst / Win32 SendInput</text>
+    <text x="128" y="192" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9.5" fill="#a7f3d0">Độ trễ ~0.1ms như Trackpad MacBook</text>
+  </g>
+
+  <!-- Row 2, Card 5: Cold-Boot WoL & Lock-Screen Bypass -->
+  <g transform="translate(24, 314)">
+    <rect width="256" height="212" rx="14" fill="url(#cardBg)" stroke="#f59e0b" stroke-opacity="0.55" stroke-width="1.5"/>
+    <rect x="14" y="14" width="38" height="38" rx="10" fill="#b45309" fill-opacity="0.45" stroke="#fbbf24" stroke-width="1"/>
+    <text x="33" y="39" text-anchor="middle" font-size="20">🔓</text>
+    <text x="62" y="29" font-family="system-ui, sans-serif" font-size="13.5" font-weight="800" fill="#fcd34d">Cold-Boot &amp; Lock-Screen</text>
+    <text x="62" y="46" font-family="system-ui, sans-serif" font-size="11.5" font-weight="700" fill="#fde68a">Bật Nguồn WoL &amp; Mở Khóa Từ Xa</text>
+    <text x="16" y="72" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">• <tspan fill="#fbbf24" font-weight="700">Wake-on-LAN</tspan> powers on sleeping</text>
+    <text x="24" y="88" font-family="system-ui, sans-serif" font-size="11" fill="#cbd5e1">PCs via TV Box / Peer LAN broadcast</text>
+    <text x="16" y="108" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">• Linux <tspan fill="#38bdf8" font-weight="700">GDM3 Pre-Login</tspan> &amp; GNOME</text>
+    <text x="24" y="124" font-family="system-ui, sans-serif" font-size="11" fill="#cbd5e1">Lock Curtain auto-lift via <tspan font-family="monospace">/dev/uinput</tspan></text>
+    <text x="16" y="144" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">• Windows <tspan fill="#60a5fa" font-weight="700">Winlogon / UAC</tspan> desktop hook</text>
+    <rect x="16" y="164" width="224" height="34" rx="8" fill="#451a03" stroke="#f59e0b" stroke-opacity="0.4"/>
+    <text x="128" y="179" text-anchor="middle" font-family="monospace" font-size="10" fill="#fcd34d">WoL Magic Packet ➔ GDM3/Winlogon</text>
+    <text x="128" y="192" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9.5" fill="#fde68a">Bật máy &amp; nhập mật khẩu mở khóa từ xa</text>
+  </g>
+
+  <!-- Row 2, Card 6: Projector Homography & HDMI Handoff -->
+  <g transform="translate(296, 314)">
+    <rect width="256" height="212" rx="14" fill="url(#cardBg)" stroke="#ec4899" stroke-opacity="0.55" stroke-width="1.5"/>
+    <rect x="14" y="14" width="38" height="38" rx="10" fill="#be185d" fill-opacity="0.45" stroke="#f472b6" stroke-width="1"/>
+    <text x="33" y="39" text-anchor="middle" font-size="20">📽️</text>
+    <text x="62" y="29" font-family="system-ui, sans-serif" font-size="13.5" font-weight="800" fill="#f9a8d4">Keystone &amp; HDMI Handoff</text>
+    <text x="62" y="46" font-family="system-ui, sans-serif" font-size="11.5" font-weight="700" fill="#fbcfe8">Nội Suy Máy Chiếu &amp; HDMI</text>
+    <text x="16" y="72" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">• Real-time <tspan fill="#f472b6" font-weight="700">4-Corner Homography</tspan></text>
+    <text x="24" y="88" font-family="system-ui, sans-serif" font-size="11" fill="#cbd5e1">unwarps tilted projector screens</text>
+    <text x="16" y="108" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">• Auto-detects active <tspan fill="#38bdf8" font-weight="700">HDMI Input</tspan> &amp;</text>
+    <text x="24" y="124" font-family="system-ui, sans-serif" font-size="11" fill="#cbd5e1">offers 1-tap handoff to TV Box</text>
+    <text x="16" y="144" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">• Built-in <tspan fill="#34d399" font-weight="700">Google TV TLS v2</tspan> pairing</text>
+    <rect x="16" y="164" width="224" height="34" rx="8" fill="#500724" stroke="#ec4899" stroke-opacity="0.4"/>
+    <text x="128" y="179" text-anchor="middle" font-family="monospace" font-size="10" fill="#f9a8d4">Projector Lens + HDMI ➔ TV360</text>
+    <text x="128" y="192" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9.5" fill="#fbcfe8">Chỉnh nét thấu kính &amp; tự nhận cổng HDMI</text>
+  </g>
+
+  <!-- Row 2, Card 7: Zero-Config UDP Mesh & 35s Zero-CPU Sleep -->
+  <g transform="translate(568, 314)">
+    <rect width="256" height="212" rx="14" fill="url(#cardBg)" stroke="#06b6d4" stroke-opacity="0.55" stroke-width="1.5"/>
+    <rect x="14" y="14" width="38" height="38" rx="10" fill="#0e7490" fill-opacity="0.45" stroke="#22d3ee" stroke-width="1"/>
+    <text x="33" y="39" text-anchor="middle" font-size="20">🕸️</text>
+    <text x="62" y="29" font-family="system-ui, sans-serif" font-size="13.5" font-weight="800" fill="#67e8f9">Self-Healing UDP Mesh</text>
+    <text x="62" y="46" font-family="system-ui, sans-serif" font-size="11.5" font-weight="700" fill="#a5f3fc">Tự Tìm IP &amp; Tự Ngủ 0% CPU</text>
+    <text x="16" y="72" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">• Auto-discovers DHCP IP changes via</text>
+    <text x="24" y="88" font-family="system-ui, sans-serif" font-size="11" fill="#cbd5e1"><tspan font-family="monospace" fill="#67e8f9">UDP :19888</tspan> + ARP MAC table</text>
+    <text x="16" y="108" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">• Smart <tspan fill="#34d399" font-weight="700">⏱ 35s Auto-Sleep</tspan> drops CPU</text>
+    <text x="24" y="124" font-family="system-ui, sans-serif" font-size="11" fill="#cbd5e1">usage to <tspan fill="#34d399" font-weight="700">0.0%</tspan> when idle; wakes in 10ms</text>
+    <text x="16" y="144" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">• Dual-NIC Ethernet/Wi-Fi failover</text>
+    <rect x="16" y="164" width="224" height="34" rx="8" fill="#083344" stroke="#06b6d4" stroke-opacity="0.4"/>
+    <text x="128" y="179" text-anchor="middle" font-family="monospace" font-size="10" fill="#67e8f9">0.0% Idle CPU • ~10MB RAM</text>
+    <text x="128" y="192" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9.5" fill="#a5f3fc">Đổi IP mạng vẫn tự nhận 100% không mất kết nối</text>
+  </g>
+
+  <!-- Row 2, Card 8: $0 Permanent URL + 3-Layer Security -->
+  <g transform="translate(840, 314)">
+    <rect width="256" height="212" rx="14" fill="url(#cardBg)" stroke="#f43f5e" stroke-opacity="0.55" stroke-width="1.5"/>
+    <rect x="14" y="14" width="38" height="38" rx="10" fill="#be123c" fill-opacity="0.45" stroke="#fb7185" stroke-width="1"/>
+    <text x="33" y="39" text-anchor="middle" font-size="20">🛡️</text>
+    <text x="62" y="29" font-family="system-ui, sans-serif" font-size="13.5" font-weight="800" fill="#fda4af">$0 Permanent URL &amp; PIN</text>
+    <text x="62" y="46" font-family="system-ui, sans-serif" font-size="11.5" font-weight="700" fill="#fecdd3">Tên Miền Cố Định $0 &amp; Bảo Mật</text>
+    <text x="16" y="72" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">• Cloudflare Quick Tunnel + Gist +</text>
+    <text x="24" y="88" font-family="system-ui, sans-serif" font-size="11" fill="#cbd5e1"><tspan fill="#fda4af" font-weight="700">GitHub Pages</tspan> = Free Fixed Domain</text>
+    <text x="16" y="108" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">• <tspan fill="#34d399" font-weight="700">Home Wi-Fi</tspan>: Instant, zero PIN prompt</text>
+    <text x="16" y="128" font-family="system-ui, sans-serif" font-size="11" fill="#e2e8f0">• <tspan fill="#fbbf24" font-weight="700">4G/5G Internet</tspan>: PIN + 30d Cookie +</text>
+    <text x="24" y="144" font-family="system-ui, sans-serif" font-size="11" fill="#cbd5e1">5-try / 15-min Brute-Force Lockout</text>
+    <rect x="16" y="164" width="224" height="34" rx="8" fill="#4c0519" stroke="#f43f5e" stroke-opacity="0.4"/>
+    <text x="128" y="179" text-anchor="middle" font-family="monospace" font-size="10" fill="#fda4af">TLS 1.3 + ConstantTimeCompare</text>
+    <text x="128" y="192" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9.5" fill="#fecdd3">An toàn tuyệt đối khi mở ra ngoài Internet</text>
+  </g>
+</svg>
