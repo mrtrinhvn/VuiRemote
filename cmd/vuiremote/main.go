@@ -96,7 +96,7 @@ var (
 	kawSourceMu     sync.RWMutex
 	cachedPinMu     sync.Mutex
 	cachedPin       = ""
-	authSecret      = fmt.Sprintf("vui_%d", time.Now().UnixNano())
+	authSecret      = "vuiremote_auth_v1"
 	authAttemptMu   sync.Mutex
 	authAttempts    = make(map[string]*authFailureState)
 )
@@ -188,26 +188,8 @@ func getClientIP(r *http.Request) string {
 	return r.RemoteAddr
 }
 
-func isPrivateLANIP(ipStr string) bool {
-	ip := net.ParseIP(strings.TrimSpace(ipStr))
-	if ip == nil {
-		return false
-	}
-	if ip.IsLoopback() || ip.IsPrivate() || ip.IsLinkLocalUnicast() {
-		return true
-	}
-	return false
-}
-
 func isRequestFromInternet(r *http.Request) bool {
-	if r.Header.Get("Cf-Ray") != "" || r.Header.Get("Cf-Connecting-Ip") != "" || r.Header.Get("X-Forwarded-Proto") != "" || r.Header.Get("X-Forwarded-For") != "" {
-		return true
-	}
-	host, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err != nil {
-		host = r.RemoteAddr
-	}
-	return !isPrivateLANIP(host)
+	return r.Header.Get("Cf-Ray") != "" || r.Header.Get("Cf-Connecting-Ip") != "" || r.Header.Get("X-Forwarded-Proto") != ""
 }
 
 func checkAuthRateLimit(ip string) (bool, int) {
@@ -4414,6 +4396,15 @@ var proxyTransport = &http.Transport{
 
 func forwardIfRemote(w http.ResponseWriter, r *http.Request) bool {
 	dev := r.URL.Query().Get("dev")
+	if r.URL.Path == "/api/upload_image" && isAndroid() {
+		if dev == "" || dev == "local" || dev == myDeviceType || dev == "tx3" || dev == "projector" || dev == "kaw" || dev == "tv360" {
+			if getDeviceHost("pc") != "" {
+				dev = "pc"
+			} else if getDeviceHost("win11") != "" {
+				dev = "win11"
+			}
+		}
+	}
 	if dev == "" || dev == "local" || dev == myDeviceType || dev == myIP || isOwnLocalIP(dev) {
 		return false
 	}
@@ -4513,7 +4504,14 @@ func forwardIfRemote(w http.ResponseWriter, r *http.Request) bool {
 
 	rawURI := r.URL.RequestURI()
 	re := regexp.MustCompile(`([?&])dev=[^&]*`)
-	forwardURI := re.ReplaceAllString(rawURI, "${1}dev=local")
+	var forwardURI string
+	if re.MatchString(rawURI) {
+		forwardURI = re.ReplaceAllString(rawURI, "${1}dev=local")
+	} else if strings.Contains(rawURI, "?") {
+		forwardURI = rawURI + "&dev=local"
+	} else {
+		forwardURI = rawURI + "?dev=local"
+	}
 
 	targetURL := "http://" + targetHost + forwardURI
 	timeout := 2500 * time.Millisecond
@@ -4540,6 +4538,9 @@ func forwardIfRemote(w http.ResponseWriter, r *http.Request) bool {
 		w.WriteHeader(http.StatusBadGateway)
 		w.Write([]byte(fmt.Sprintf(`{"error":"bad_proxy_request","dev":%q}`, dev)))
 		return true
+	}
+	if r.URL.Path == "/api/upload_image" && r.ContentLength > 0 {
+		req.ContentLength = r.ContentLength
 	}
 	if ct := r.Header.Get("Content-Type"); ct != "" {
 		req.Header.Set("Content-Type", ct)
@@ -9637,6 +9638,10 @@ function uploadQueuedFilesNow(list, onDone) {
         } else {
           flashStatus('✓ Đã truyền ' + fileName + ' & chèn vào máy từ xa!', true);
         }
+      } else if (xhr.status === 401) {
+        flashStatus('🔑 Phiên kết nối cần mở khóa lại — Đang tải màn hình PIN...', false);
+        setTimeout(function() { window.location.reload(); }, 600);
+        return;
       } else {
         flashStatus('⚠️ Lỗi truyền file: HTTP ' + xhr.status, false);
       }
@@ -10613,7 +10618,7 @@ func main() {
 				Value:    token,
 				Path:     "/",
 				MaxAge:   30 * 86400,
-				HttpOnly: true,
+				HttpOnly: false,
 				SameSite: http.SameSiteLaxMode,
 			})
 			w.Write([]byte(fmt.Sprintf(`{"ok":true,"token":"%s"}`, token)))
@@ -11563,9 +11568,16 @@ func main() {
 
 		homeDir, _ := os.UserHomeDir()
 		if homeDir == "" {
-			homeDir = os.TempDir()
+			if isAndroid() {
+				homeDir = "/sdcard"
+			} else {
+				homeDir = os.TempDir()
+			}
 		}
 		dlDir := filepath.Join(homeDir, "Downloads", "VuiRemote")
+		if isAndroid() {
+			dlDir = "/sdcard/Download/VuiRemote"
+		}
 		_ = os.MkdirAll(dlDir, 0755)
 		ts := time.Now().Format("20060102_150405")
 		fileName := fmt.Sprintf("%s_%s", ts, safeName)
@@ -11573,7 +11585,11 @@ func main() {
 
 		outFile, err := os.Create(savePath)
 		if err != nil {
-			savePath = filepath.Join(os.TempDir(), fileName)
+			fallbackDir := os.TempDir()
+			if isAndroid() {
+				fallbackDir = "/data/local/tmp"
+			}
+			savePath = filepath.Join(fallbackDir, fileName)
 			outFile, err = os.Create(savePath)
 			if err != nil {
 				http.Error(w, "cannot create file", http.StatusInternalServerError)
@@ -11587,6 +11603,7 @@ func main() {
 			http.Error(w, "empty or invalid upload", http.StatusBadRequest)
 			return
 		}
+		fmt.Printf("[UPLOAD OK] Saved %s (%d bytes)\n", savePath, written)
 
 		finalPath := savePath
 		ext := strings.ToLower(filepath.Ext(savePath))
