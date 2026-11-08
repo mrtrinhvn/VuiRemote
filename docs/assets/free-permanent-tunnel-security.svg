@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 270" width="100%" height="auto">
+  <rect width="960" height="270" rx="16" fill="#090d16" stroke="#1e293b" stroke-width="2"/>
+
+  <text x="480" y="34" fill="#f8fafc" font-family="system-ui, -apple-system, sans-serif" font-size="18" font-weight="800" text-anchor="middle">
+    🛡️ Cơ Chế Tên Miền Cố Định Miễn Phí 100% &amp; Bảo Mật Đa Lớp (Zero-Trust Security)
+  </text>
+  <text x="480" y="54" fill="#94a3b8" font-family="system-ui, -apple-system, sans-serif" font-size="12" text-anchor="middle">
+    Không tốn phí mua tên miền • Không cần mở Port Router • Mỗi nhà một mã PIN độc lập an toàn tuyệt đối
+  </text>
+
+  <!-- Left Box: Free Permanent Domain Architecture -->
+  <g transform="translate(25, 72)">
+    <rect width="445" height="176" rx="14" fill="#111827" stroke="#3b82f6" stroke-width="1.5"/>
+    <text x="20" y="28" fill="#60a5fa" font-family="system-ui, sans-serif" font-size="14" font-weight="800">🌐 1. Tên Miền Cố Định Vĩnh Viễn Miễn Phí (0đ/tháng)</text>
+    <text x="20" y="52" fill="#e2e8f0" font-family="system-ui, sans-serif" font-size="11.5">• <tspan fill="#38bdf8" font-weight="700">Cloudflare Quick Tunnel</tspan> tạo đường truyền HTTPS xuyên qua mọi</text>
+    <text x="28" y="69" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="11.5">tường lửa / CGNAT nhà mạng mà không cần mở Port trên Router.</text>
+    <text x="20" y="93" fill="#e2e8f0" font-family="system-ui, sans-serif" font-size="11.5">• Khi mất điện có lại, Cloudflare đổi link mới -&gt; <tspan fill="#fde68a" font-weight="700">VuiRemote tự động</tspan></text>
+    <text x="28" y="110" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="11.5"><tspan fill="#fde68a" font-weight="700">đồng bộ</tspan> link mới đó lên GitHub Gist của riêng bạn trong 2 giây.</text>
+    <text x="20" y="134" fill="#e2e8f0" font-family="system-ui, sans-serif" font-size="11.5">• Địa chỉ <tspan font-family="monospace" fill="#4ade80" font-weight="700">https://&lt;ten-ban&gt;.github.io/vui</tspan> tự động chuyển hướng</text>
+    <text x="28" y="151" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="11.5">tức thì về nhà — <tspan fill="#86efac" font-weight="700">Lưu 1 lần trên điện thoại, dùng mãi mãi!</tspan></text>
+  </g>
+
+  <!-- Right Box: 3-Layer Security Shield -->
+  <g transform="translate(490, 72)">
+    <rect width="445" height="176" rx="14" fill="#111827" stroke="#10b981" stroke-width="1.5"/>
+    <text x="20" y="28" fill="#34d399" font-family="system-ui, sans-serif" font-size="14" font-weight="800">🔒 2. Bảo Mật 3 Lớp Cho Từng Hộ Gia Đình</text>
+    <text x="20" y="52" fill="#e2e8f0" font-family="system-ui, sans-serif" font-size="11.5">• <tspan fill="#6ee7b7" font-weight="700">Mã PIN ngẫu nhiên riêng biệt:</tspan> Tự sinh bằng <tspan font-family="monospace" fill="#93c5fd">crypto/rand</tspan> ngay</text>
+    <text x="28" y="69" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="11.5">lần chạy đầu tiên (lưu quyền <tspan font-family="monospace">0600</tspan>), không dùng chung PIN mặc định.</text>
+    <text x="20" y="93" fill="#e2e8f0" font-family="system-ui, sans-serif" font-size="11.5">• <tspan fill="#fde68a" font-weight="700">Phân luồng thông minh:</tspan> Dùng Wi-Fi trong nhà mở ngay không hỏi</text>
+    <text x="28" y="110" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="11.5">PIN; đi qua Internet 4G/5G bắt buộc xác thực PIN 100%.</text>
+    <text x="20" y="134" fill="#e2e8f0" font-family="system-ui, sans-serif" font-size="11.5">• <tspan fill="#f87171" font-weight="700">Chống dò mật khẩu (Anti-Brute-Force):</tspan> So sánh <tspan font-family="monospace">Constant-Time</tspan>,</text>
+    <text x="28" y="151" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="11.5">tự động <tspan fill="#fca5a5" font-weight="700">khóa IP 15 phút</tspan> nếu nhập sai mã PIN quá 5 lần liên tiếp.</text>
+  </g>
+</svg>

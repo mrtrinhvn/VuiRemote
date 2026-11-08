@@ -1,0 +1,5 @@
+{
+  "gist_id": "YOUR_GITHUB_GIST_ID",
+  "token": "ghp_YOUR_GITHUB_PERSONAL_ACCESS_TOKEN_WITH_GIST_SCOPE",
+  "short_url": "https://<your-github-username>.github.io/vui"
+}

@@ -1,0 +1,50 @@
+{
+  "tvbox_livingroom": {
+    "id": "tvbox_livingroom",
+    "name": "Android TV Box Phòng Khách",
+    "icon": "📺",
+    "host": "192.168.1.100:8080",
+    "mac": "aa:bb:cc:dd:ee:01",
+    "type": "box",
+    "platform": "android",
+    "online": true,
+    "has_wol": false,
+    "last_seen": 0
+  },
+  "pc_workstation": {
+    "id": "pc_workstation",
+    "name": "Máy tính Linux / Ubuntu",
+    "icon": "💻",
+    "host": "192.168.1.101:8090",
+    "mac": "aa:bb:cc:dd:ee:02",
+    "type": "pc",
+    "platform": "linux",
+    "online": true,
+    "has_wol": true,
+    "last_seen": 0
+  },
+  "laptop_win11": {
+    "id": "laptop_win11",
+    "name": "Laptop Windows 11",
+    "icon": "💻",
+    "host": "192.168.1.102:8090",
+    "mac": "aa:bb:cc:dd:ee:03",
+    "type": "pc",
+    "platform": "windows",
+    "online": false,
+    "has_wol": true,
+    "last_seen": 0
+  },
+  "projector_bedroom": {
+    "id": "projector_bedroom",
+    "name": "Máy chiếu Thông Minh",
+    "icon": "📽",
+    "host": "192.168.1.103:8080",
+    "mac": "",
+    "type": "projector",
+    "platform": "android",
+    "online": false,
+    "has_wol": false,
+    "last_seen": 0
+  }
+}

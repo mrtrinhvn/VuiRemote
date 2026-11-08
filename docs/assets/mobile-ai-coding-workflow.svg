@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 290" width="100%" height="auto">
+  <defs>
+    <linearGradient id="bgWork" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#090d16"/>
+      <stop offset="100%" stop-color="#111827"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="960" height="290" rx="16" fill="url(#bgWork)" stroke="#1e293b" stroke-width="2"/>
+
+  <text x="480" y="34" fill="#f8fafc" font-family="system-ui, -apple-system, sans-serif" font-size="18.5" font-weight="800" text-anchor="middle">
+    ☕ Ra Ngoài Đường Vẫn Làm Việc Với Máy Tính &amp; AI Agent (Antigravity / Claude Code / Codex)
+  </text>
+  <text x="480" y="54" fill="#94a3b8" font-family="system-ui, -apple-system, sans-serif" font-size="12" text-anchor="middle">
+    Không cần mang theo Laptop — Chỉ cần mở điện thoại bằng 4G/5G để theo dõi và giao việc cho AI Agent ở nhà
+  </text>
+
+  <!-- Step 1 -->
+  <g transform="translate(24, 74)">
+    <rect width="216" height="190" rx="14" fill="#0f172a" stroke="#3b82f6" stroke-width="1.5"/>
+    <circle cx="32" cy="30" r="14" fill="#1d4ed8"/>
+    <text x="32" y="35" fill="#fff" font-family="system-ui, sans-serif" font-size="13" font-weight="800" text-anchor="middle">1</text>
+    <text x="56" y="34" fill="#60a5fa" font-family="system-ui, sans-serif" font-size="13" font-weight="800">Mở Link Cố Định 4G</text>
+    <text x="18" y="64" fill="#e2e8f0" font-family="system-ui, sans-serif" font-size="11">• Chạm biểu tượng <tspan font-weight="700" fill="#93c5fd">VuiRemote</tspan> ngoài</text>
+    <text x="18" y="80" fill="#e2e8f0" font-family="system-ui, sans-serif" font-size="11">  màn hình chính điện thoại.</text>
+    <text x="18" y="102" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="11">• Tự động nối qua tên miền miễn phí</text>
+    <text x="18" y="118" fill="#fde68a" font-family="monospace" font-size="10.5" font-weight="700">  https://&lt;ban&gt;.github.io/vui</text>
+    <rect x="18" y="136" width="180" height="36" rx="8" fill="#1e293b"/>
+    <text x="108" y="158" fill="#4ade80" font-family="system-ui, sans-serif" font-size="11" font-weight="700" text-anchor="middle">🔒 Nhập PIN 4 số mở khóa</text>
+  </g>
+
+  <!-- Step 2 -->
+  <g transform="translate(256, 74)">
+    <rect width="216" height="190" rx="14" fill="#0f172a" stroke="#10b981" stroke-width="1.5"/>
+    <circle cx="32" cy="30" r="14" fill="#059669"/>
+    <text x="32" y="35" fill="#fff" font-family="system-ui, sans-serif" font-size="13" font-weight="800" text-anchor="middle">2</text>
+    <text x="56" y="34" fill="#34d399" font-family="system-ui, sans-serif" font-size="13" font-weight="800">Đánh Thức &amp; Mở Khóa</text>
+    <text x="18" y="64" fill="#e2e8f0" font-family="system-ui, sans-serif" font-size="11">• Máy tính đang tắt hoặc ngủ?</text>
+    <text x="18" y="82" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="11">  Bấm <tspan fill="#4ade80" font-weight="700">⚡ Bật máy (Wake-on-LAN)</tspan>.</text>
+    <text x="18" y="104" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="11">• Kẹt ở màn hình khóa Windows 10/11</text>
+    <text x="18" y="120" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="11">  hoặc Linux GDM3? Nhập mật khẩu</text>
+    <rect x="18" y="136" width="180" height="36" rx="8" fill="#064e3b"/>
+    <text x="108" y="158" fill="#6ee7b7" font-family="system-ui, sans-serif" font-size="11" font-weight="700" text-anchor="middle">🔓 Mở khóa thẳng vào Desktop</text>
+  </g>
+
+  <!-- Step 3 -->
+  <g transform="translate(488, 74)">
+    <rect width="216" height="190" rx="14" fill="#0f172a" stroke="#8b5cf6" stroke-width="1.5"/>
+    <circle cx="32" cy="30" r="14" fill="#6d28d9"/>
+    <text x="32" y="35" fill="#fff" font-family="system-ui, sans-serif" font-size="13" font-weight="800" text-anchor="middle">3</text>
+    <text x="56" y="34" fill="#c4b5fd" font-family="system-ui, sans-serif" font-size="13" font-weight="800">Gọi Nhanh AI Agent</text>
+    <text x="18" y="64" fill="#e2e8f0" font-family="system-ui, sans-serif" font-size="11">• Bấm nút <tspan fill="#93c5fd" font-weight="700">🪟 Cửa sổ</tspan> -&gt; chọn ngay</text>
+    <text x="18" y="82" fill="#e2e8f0" font-family="system-ui, sans-serif" font-size="11">  <tspan fill="#60a5fa" font-weight="700">🚀 Gọi Antigravity</tspan> (hoặc Claude).</text>
+    <text x="18" y="104" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="11">• Cửa sổ AI Agent tự bung toàn màn</text>
+    <text x="18" y="120" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="11">  hình 2K sắc nét (<tspan font-family="monospace" fill="#c4b5fd">yuvj444p</tspan>).</text>
+    <rect x="18" y="136" width="180" height="36" rx="8" fill="#2e1065"/>
+    <text x="108" y="158" fill="#ddd6fe" font-family="system-ui, sans-serif" font-size="11" font-weight="700" text-anchor="middle">🔍 Zoom 10x đọc rõ từng dòng code</text>
+  </g>
+
+  <!-- Step 4 -->
+  <g transform="translate(720, 74)">
+    <rect width="216" height="190" rx="14" fill="#0f172a" stroke="#f59e0b" stroke-width="1.5"/>
+    <circle cx="32" cy="30" r="14" fill="#d97706"/>
+    <text x="32" y="35" fill="#fff" font-family="system-ui, sans-serif" font-size="13" font-weight="800" text-anchor="middle">4</text>
+    <text x="56" y="34" fill="#fcd34d" font-family="system-ui, sans-serif" font-size="13" font-weight="800">Ra Lệnh Giọng Nói</text>
+    <text x="18" y="64" fill="#e2e8f0" font-family="system-ui, sans-serif" font-size="11">• Chạm đúng ô chat của AI Agent</text>
+    <text x="18" y="82" fill="#e2e8f0" font-family="system-ui, sans-serif" font-size="11">  với tọa độ chuột chính xác 1:1.</text>
+    <text x="18" y="104" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="11">• Bấm <tspan fill="#fde68a" font-weight="700">🎙️ Mic Giọng Nói</tspan> hoặc gõ</text>
+    <text x="18" y="120" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="11">  tiếng Việt có dấu gửi lệnh mới!</text>
+    <rect x="18" y="136" width="180" height="36" rx="8" fill="#451a03"/>
+    <text x="108" y="158" fill="#fde68a" font-family="system-ui, sans-serif" font-size="11" font-weight="700" text-anchor="middle">🤖 AI Agent tự làm việc ở nhà</text>
+  </g>
+</svg>

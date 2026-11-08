@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VuiRemote — Đang kết nối về nhà...</title>
+  <style>
+    body {
+      margin: 0; height: 100vh; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      background: #07090e; color: #e2e8f0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      text-align: center; padding: 20px;
+    }
+    .spinner {
+      width: 42px; height: 42px; border: 3px solid rgba(59,130,246,0.25);
+      border-top-color: #3b82f6; border-radius: 50%;
+      animation: spin 0.8s linear infinite; margin-bottom: 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .sub { color: #94a3b8; font-size: 13px; margin-top: 6px; }
+  </style>
+</head>
+<body>
+  <div class="spinner"></div>
+  <div style="font-size:17px; font-weight:700;">🚀 Đang kết nối tới VuiRemote tại nhà...</div>
+  <div class="sub" id="status-text">Đang đồng bộ đường truyền Cloudflare Tunnel mới nhất</div>
+
+  <script>
+    // AI Agent sẽ tự động thay YOUR_GIST_RAW_URL bằng địa chỉ Gist của bạn:
+    // Ví dụ: https://gist.githubusercontent.com/<username>/<gist_id>/raw/vui_tunnel.json
+    var GIST_RAW_URL = "https://api.github.com/gists/YOUR_GITHUB_GIST_ID";
+
+    fetch(GIST_RAW_URL + "?t=" + Date.now(), { cache: "no-store" })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        var content = data.files && data.files["vui_tunnel.json"] && data.files["vui_tunnel.json"].content;
+        var parsed = content ? JSON.parse(content) : data;
+        if (parsed && parsed.url) {
+          window.location.replace(parsed.url);
+        } else {
+          document.getElementById("status-text").innerText = "Chưa tìm thấy URL Tunnel trong Gist.";
+        }
+      })
+      .catch(function(err) {
+        document.getElementById("status-text").innerText = "Lỗi kết nối Gist: " + err;
+      });
+  </script>
+</body>
+</html>
