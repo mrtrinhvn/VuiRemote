@@ -9,7 +9,9 @@
 
 <p align="center">
   <b><a href="#-english-documentation">🇺🇸 Read in English</a></b> &nbsp;•&nbsp;
-  <b><a href="#-tài-liệu-tiếng-việt-vietnamese-documentation">🇻🇳 Đọc bản Tiếng Việt</a></b>
+  <b><a href="#-tài-liệu-tiếng-việt-vietnamese-documentation">🇻🇳 Đọc bản Tiếng Việt</a></b> &nbsp;•&nbsp;
+  <b><a href="https://github.com/mrtrinhvn/VuiRemote/raw/main/docs/videos/VuiRemote_TikTok_Shorts_9x16.mp4">📱 Tải Clip TikTok (9:16)</a></b> &nbsp;•&nbsp;
+  <b><a href="https://github.com/mrtrinhvn/VuiRemote/raw/main/docs/videos/VuiRemote_YouTube_16x9.mp4">🖥️ Tải Clip YouTube (16:9)</a></b>
 </p>
 
 <p align="center">
