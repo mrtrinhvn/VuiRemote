@@ -5211,16 +5211,51 @@ const htmlPage = `<!DOCTYPE html>
     flex: 1; min-height: 0; width: 100%; height: 100%; display: flex; flex-direction: column; position: relative;
   }
 
-  /* Floating Watermark Top Pill (Nhỏ gọn góc trái trên, tự xuống dòng gọn gàng nếu màn hình hẹp) */
+  /* Universal Drag Handle (Modern Web Guidance compliant: touch-action: none, -webkit-user-select before user-select) */
+  .drag-handle {
+    cursor: grab;
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  .drag-handle.dragging, .dragging .drag-handle, .drag-handle:active {
+    cursor: grabbing;
+  }
+
+  /* Floating Watermark Top Pill (Kéo di chuyển tự do mọi vị trí & Thu gọn 1 chạm để không bao giờ che Title Bar cửa sổ) */
   .wm-top-bar {
-    position: absolute; top: 6px; left: 6px; max-width: calc(100% - 12px); z-index: 22;
+    position: absolute; top: 6px; left: 6px; max-width: calc(100% - 12px); z-index: 25;
     display: flex; align-items: center; flex-wrap: wrap; gap: 4px;
-    background: rgba(10, 15, 28, 0.52); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
-    border: 1px solid rgba(255, 255, 255, 0.18); border-radius: 14px;
-    padding: 3px 5px; opacity: 0.88; transition: opacity 0.2s ease;
+    background: rgba(10, 15, 28, 0.58); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 14px;
+    padding: 3px 5px; opacity: 0.9; transition: opacity 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
     box-shadow: 0 2px 10px rgba(0,0,0,0.45);
+    -webkit-user-select: none; user-select: none; touch-action: none;
   }
   .wm-top-bar:hover, .wm-top-bar:active { opacity: 0.99; }
+  .wm-top-bar.dragging, .screen-watermark-source.dragging, .screen-watermark-pill.dragging, .vui-landscape-kbd.dragging {
+    opacity: 0.98 !important;
+    border-color: rgba(96, 165, 250, 0.85) !important;
+    box-shadow: 0 8px 26px rgba(0, 0, 0, 0.72), 0 0 12px rgba(59, 130, 246, 0.35) !important;
+    transition: none !important;
+  }
+  .wm-bar-grip {
+    display: inline-flex; align-items: center; justify-content: center;
+    height: 24px; padding: 0 6px; border-radius: 999px;
+    background: rgba(30, 41, 59, 0.65); border: 1px solid rgba(148, 163, 184, 0.32);
+    color: #93c5fd; font-size: 11.5px; font-weight: 800; line-height: 1;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.9);
+  }
+  .wm-bar-grip:focus-visible, .drag-handle:focus-visible {
+    outline: 2px solid #60a5fa; outline-offset: 1px;
+  }
+  .wm-top-collapse-btn {
+    width: 24px; height: 24px; padding: 0; font-size: 12px; font-weight: 900;
+    background: rgba(30, 41, 59, 0.65); border-color: rgba(148, 163, 184, 0.35); color: #e2e8f0;
+  }
+  .wm-top-bar.collapsed > *:not(.wm-bar-grip):not(.wm-keep-collapsed):not(.wm-top-collapse-btn) {
+    display: none !important;
+  }
 
   .wm-source-badge {
     display: inline-flex; align-items: center; background: #f59e0b; color: #0f172a;
@@ -5239,10 +5274,10 @@ const htmlPage = `<!DOCTYPE html>
     background: rgba(15, 23, 42, 0.82); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
     border: 1px solid rgba(245, 158, 11, 0.5); border-radius: 10px;
     padding: 4px 8px 5px 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.55);
-    user-select: none; -webkit-user-select: none; font-size: 11px; color: #f1f5f9;
+    -webkit-user-select: none; user-select: none; touch-action: none; font-size: 11px; color: #f1f5f9;
     text-shadow: 0 1px 2px rgba(0,0,0,0.9);
     max-width: 260px;
-    transition: all 0.2s ease;
+    transition: opacity 0.2s ease, border-color 0.2s ease;
   }
   .screen-watermark-source .src-header-row {
     display: flex; align-items: center; gap: 5px; font-weight: 700; color: #fbbf24; font-size: 11px;
@@ -5383,7 +5418,7 @@ const htmlPage = `<!DOCTYPE html>
     background: rgba(10, 15, 28, 0.42); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
     border: 1px solid rgba(255, 255, 255, 0.18); border-radius: 999px; padding: 3px 8px;
     color: #e2e8f0; font-size: 10.5px; font-weight: 700; cursor: pointer; z-index: 18;
-    transition: all 0.15s ease; user-select: none; -webkit-user-select: none;
+    transition: opacity 0.15s ease, border-color 0.15s ease, background 0.15s ease; -webkit-user-select: none; user-select: none; touch-action: none;
     box-shadow: 0 2px 8px rgba(0,0,0,0.45); opacity: 0.72;
     text-shadow: 0 1px 2px rgba(0,0,0,0.9);
   }
@@ -5583,19 +5618,32 @@ const htmlPage = `<!DOCTYPE html>
     display: none !important;
   }
 
-  /* BÀN PHÍM CẢM ỨNG NGANG TÍCH HỢP (Luôn xuất hiện đúng chiều ngang của màn hình máy bị điều khiển và đẩy #smart-input-bar lên đỉnh bàn phím ngay cả khi iPhone khóa xoay dọc) */
+  /* BÀN PHÍM CẢM ỨNG NGANG TÍCH HỢP (Luôn xuất hiện đúng chiều ngang của màn hình máy bị điều khiển, có thanh nắm kéo di chuyển tự do để không bao giờ che cửa sổ) */
   .vui-landscape-kbd {
     position: absolute; left: 0; right: 0; bottom: 0; z-index: 9998;
-    background: rgba(15, 23, 42, 0.98); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    background: rgba(15, 23, 42, 0.96); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
     border-top: 1.5px solid rgba(59, 130, 246, 0.65);
-    padding: 5px 6px 6px; box-sizing: border-box;
+    padding: 4px 6px 6px; box-sizing: border-box;
     display: none; flex-direction: column; gap: 4px;
     box-shadow: 0 -8px 28px rgba(0, 0, 0, 0.85);
-    user-select: none; -webkit-user-select: none; touch-action: manipulation;
+    -webkit-user-select: none; user-select: none; touch-action: manipulation;
   }
   .vui-landscape-kbd.show {
     display: flex;
   }
+  .vkbd-drag-header {
+    display: flex; align-items: center; justify-content: space-between;
+    width: 100%; max-width: 680px; margin: 0 auto 1px; padding: 1px 6px;
+    box-sizing: border-box; border-radius: 6px;
+    background: rgba(30, 41, 59, 0.65); border: 1px solid rgba(148, 163, 184, 0.25);
+    color: #93c5fd; font-size: 10px; font-weight: 700;
+  }
+  .vkbd-dock-btn {
+    background: rgba(59, 130, 246, 0.22); border: 1px solid rgba(96, 165, 250, 0.45);
+    color: #dbeafe; border-radius: 999px; padding: 1px 7px; font-size: 9.5px; font-weight: 700;
+    cursor: pointer; line-height: 1.2;
+  }
+  .vkbd-dock-btn:active { background: #2563eb; color: #fff; }
   .vkbd-row {
     display: flex; align-items: center; justify-content: center; gap: 4px; width: 100%; max-width: 680px; margin: 0 auto;
   }
@@ -5719,9 +5767,10 @@ const htmlPage = `<!DOCTYPE html>
           <!-- Bàn phím cảm ứng Ngang tích hợp (Xuất hiện đúng chiều ngang màn hình khi bấm nút ⌨️ Bàn phím) -->
           <div class="vui-landscape-kbd" id="vui-landscape-kbd"></div>
 
-          <!-- Watermark Pill Góc Trái Trên: Chọn thiết bị & Công cụ nhanh (Không chiếm diện tích khung hình) -->
+          <!-- Watermark Pill Góc Trái Trên: Chọn thiết bị & Công cụ nhanh (Kéo di chuyển tự do & Thu gọn 1 chạm để không bao giờ che Title Bar cửa sổ) -->
           <div class="wm-top-bar" id="wm-top-bar">
-            <button class="screen-dev-picker-btn" onclick="openDevModal()" title="Đổi thiết bị điều khiển">
+            <span class="wm-bar-grip drag-handle" id="wm-top-drag-handle" tabindex="0" aria-label="Giữ kéo hoặc dùng phím mũi tên để di chuyển thanh công cụ" title="Giữ và kéo để di chuyển thanh công cụ tới vị trí bất kỳ (Nhấp đúp để về góc mặc định)">✥</span>
+            <button class="screen-dev-picker-btn wm-keep-collapsed" onclick="openDevModal()" title="Đổi thiết bị điều khiển">
               <span class="live-dot" id="stream-status-dot"></span>
               <span id="screen-dev-name">📺 Tanix TX3</span>
               <span id="wm-source-badge" class="wm-source-badge" style="display:none;">HDMI 2</span>
@@ -5748,11 +5797,13 @@ const htmlPage = `<!DOCTYPE html>
             <button class="btn-wm-icon" id="btn-top-lang" onclick="toggleUILanguage()" style="width:auto; padding:0 6px; font-size:10px; font-weight:800; color:#bae6fd; border-color:rgba(56,189,248,0.5);" title="Switch Language (Tiếng Việt / English)">🌐 VI</button>
             <button class="btn-wm-icon" onclick="openDrawer()" title="Settings & Utilities / Thiết lập & Tiện ích">⚙️</button>
             <button class="btn-wm-icon" onclick="openHelpModal()" title="Guide / Hướng dẫn">❓</button>
+            <button type="button" class="btn-wm-icon wm-top-collapse-btn" id="wm-top-collapse-btn" onclick="event.stopPropagation(); toggleTopBarCollapse();" title="Thu gọn / Mở rộng thanh công cụ">−</button>
           </div>
 
-          <!-- Floating External Source Watermark Pill Góc Phải Trên -->
+          <!-- Floating External Source Watermark Pill Góc Phải Trên (Kéo di chuyển tự do) -->
           <div id="screen-watermark-source" class="screen-watermark-source" style="display:none;" onclick="event.stopPropagation();">
-            <div class="src-header-row">
+            <div class="src-header-row drag-handle" id="wm-src-drag-handle" tabindex="0" aria-label="Giữ kéo hoặc dùng phím mũi tên để di chuyển bảng nguồn phát" title="Giữ và kéo để di chuyển bảng nguồn phát">
+              <span>✥</span>
               <span class="src-dot"></span>
               <span>🔌</span>
               <span id="src-watermark-label">Đang xem: <b>HDMI 2 (TV360)</b></span>
@@ -5763,13 +5814,13 @@ const htmlPage = `<!DOCTYPE html>
             </div>
           </div>
 
-          <!-- Watermark Pills Góc Trái Dưới: Xoay màn hình nhanh trên iPhone/Android & Phóng to -->
-          <div class="screen-watermark-pill wm-left" id="screen-watermark-rotate" onclick="event.stopPropagation(); cycleScreenRotation();" title="Bấm để xoay màn hình ngay trên iPhone/Android (90° ↔ 270° ↔ 0° ↔ Tự động)">
+          <!-- Watermark Pills Góc Trái Dưới: Xoay màn hình nhanh trên iPhone/Android & Phóng to (Kéo di chuyển tự do) -->
+          <div class="screen-watermark-pill wm-left drag-handle" id="screen-watermark-rotate" tabindex="0" aria-label="Giữ kéo hoặc dùng phím mũi tên để di chuyển nút xoay màn hình" onclick="event.stopPropagation(); cycleScreenRotation();" title="Bấm để xoay màn hình • Giữ kéo để di chuyển vị trí">
             <span>🔁</span>
             <span id="wm-rot-text">Xoay 90°</span>
           </div>
 
-          <div class="screen-watermark-pill wm-right" id="screen-watermark-zoom" onclick="event.stopPropagation(); cycleZoomDock();" title="Bấm để phóng to / thu nhỏ">
+          <div class="screen-watermark-pill wm-right drag-handle" id="screen-watermark-zoom" tabindex="0" aria-label="Giữ kéo hoặc dùng phím mũi tên để di chuyển nút thu phóng" onclick="event.stopPropagation(); cycleZoomDock();" title="Bấm để phóng to / thu nhỏ • Giữ kéo để di chuyển vị trí">
             <span>🔍</span>
             <span id="wm-zoom-text">1.0x</span>
             <span id="wm-zoom-reset" class="wm-reset-badge" style="display:none;" onclick="event.stopPropagation(); resetZoom();" title="Về chuẩn 1x">↺</span>
@@ -5777,7 +5828,7 @@ const htmlPage = `<!DOCTYPE html>
 
           <!-- CỤM PHÍM ĐIỀU HƯỚNG WATERMARK NỔI & DI CHUYỂN ĐƯỢC (Luôn hiển thị trong suốt trên màn hình, kéo đi bất kỳ đâu) -->
           <div class="wm-nav-cluster" id="wm-nav-cluster">
-            <div class="wm-drag-header" id="wm-drag-header" title="Giữ và kéo để di chuyển cụm phím tới bất kỳ vị trí nào">
+            <div class="wm-drag-header drag-handle" id="wm-drag-header" tabindex="0" aria-label="Giữ kéo hoặc dùng phím mũi tên để di chuyển cụm phím điều hướng" title="Giữ và kéo để di chuyển cụm phím tới bất kỳ vị trí nào">
               <div class="wm-drag-grip">
                 <span>✥</span>
                 <span id="wm-nav-title">Điều hướng</span>
@@ -7451,7 +7502,15 @@ function renderLandscapeKeyboard() {
     ['123','TELEX','NATIVE','SPACE','.',',','ENTER','HIDE']
   ];
 
-  var html = '';
+  var dragHdrTitle = isEN() ? '✥ Virtual Keyboard (Drag to move)' : '✥ Bàn phím ảo (Kéo để di chuyển)';
+  var dockBtnText = isEN() ? '↺ Dock bottom' : '↺ Về đáy';
+  var dragAria = isEN()
+    ? 'Drag to move virtual keyboard, or use arrow keys'
+    : 'Kéo để di chuyển bàn phím ảo, hoặc dùng phím mũi tên';
+  var html = '<div class="vkbd-drag-header drag-handle" id="vkbd-drag-handle" tabindex="0" aria-label="' + dragAria + '">' +
+    '<span>' + dragHdrTitle + '</span>' +
+    '<button type="button" class="vkbd-dock-btn" onclick="event.stopPropagation(); resetVkbdPosition();">' + dockBtnText + '</button>' +
+    '</div>';
   for (var r = 0; r < rows.length; r++) {
     html += '<div class="vkbd-row">';
     for (var c = 0; c < rows[r].length; c++) {
@@ -7579,6 +7638,7 @@ function showLandscapeKeyboard() {
   if (!kbd) return;
   renderLandscapeKeyboard();
   kbd.classList.add('show');
+  setTimeout(clampNavClusterPosition, 20);
   positionSmartInputBar();
 }
 
@@ -7684,6 +7744,8 @@ function toggleQuickInputBar(forceState, fromIME, closedByUser) {
 
 var navWasDragged = false;
 var navLastDragEndTime = 0;
+var topBarWasDragged = false;
+var topBarLastDragEndTime = 0;
 
 function wmAct(ev, fn) {
   if (ev) ev.stopPropagation();
@@ -7691,16 +7753,27 @@ function wmAct(ev, fn) {
   if (typeof fn === 'function') fn();
 }
 
+function toggleTopBarCollapse() {
+  if (topBarWasDragged) return;
+  var bar = document.getElementById('wm-top-bar');
+  var btn = document.getElementById('wm-top-collapse-btn');
+  if (!bar) return;
+  var isCollapsed = bar.classList.toggle('collapsed');
+  if (btn) btn.innerText = isCollapsed ? '+' : '−';
+  try { localStorage.setItem('vui_wm_top_collapsed', isCollapsed ? '1' : '0'); } catch (e) {}
+  setTimeout(clampNavClusterPosition, 30);
+}
+
 function toggleNavClusterCollapse() {
-  if (navWasDragged || (Date.now() - navLastDragEndTime < 180)) return;
+  if (navWasDragged) return;
   var cluster = document.getElementById('wm-nav-cluster');
   var btn = document.getElementById('wm-collapse-btn');
   var title = document.getElementById('wm-nav-title');
   if (!cluster) return;
   var isCollapsed = cluster.classList.toggle('collapsed');
   if (btn) btn.innerText = isCollapsed ? '+' : '−';
-  if (title) title.innerText = isCollapsed ? '🎮 Phím' : 'Điều hướng';
-  localStorage.setItem('vui_wm_collapsed', isCollapsed ? '1' : '0');
+  if (title) title.innerText = isCollapsed ? (isEN() ? '🎮 Keys' : '🎮 Phím') : (isEN() ? 'Navigate' : 'Điều hướng');
+  try { localStorage.setItem('vui_wm_collapsed', isCollapsed ? '1' : '0'); } catch (e) {}
   setTimeout(clampNavClusterPosition, 30);
 }
 
@@ -7712,63 +7785,121 @@ function toggleConsoleDeck(forceState) {
   }
 }
 
-function clampNavClusterPosition() {
-  var vp = document.getElementById('screen-viewport');
-  var cluster = document.getElementById('wm-nav-cluster');
-  if (!vp || !cluster) return;
+function resetFloatingToolbarPos(elId, storageKey, toastMsg) {
+  var el = document.getElementById(elId);
+  if (!el) return;
+  el.classList.remove('floating-pos');
+  el.style.left = '';
+  el.style.top = '';
+  el.style.right = '';
+  el.style.bottom = '';
+  if (storageKey) {
+    try { localStorage.removeItem(storageKey); } catch (e) {}
+  }
+  if (toastMsg) flashStatus(toastMsg, true);
+}
+
+function resetVkbdPosition() {
+  resetFloatingToolbarPos(
+    'vui-landscape-kbd',
+    'vui_wm_kbd_pos_v1',
+    isEN() ? '📌 Docked virtual keyboard to bottom' : '📌 Đã đưa bàn phím ảo về sát đáy màn hình'
+  );
+}
+
+function applyClampedPos(el, vp, rawLeft, rawTop, storageKey) {
+  if (!el || !vp) return;
   var Wv = vp.clientWidth || vp.offsetWidth || 360;
   var Hv = vp.clientHeight || vp.offsetHeight || 640;
-  var cw = cluster.offsetWidth || 136;
-  var ch = cluster.offsetHeight || 140;
-  if (cluster.style.left && cluster.style.top) {
-    var curL = parseFloat(cluster.style.left);
-    var curT = parseFloat(cluster.style.top);
-    if (!isNaN(curL) && !isNaN(curT)) {
-      var clampedL = Math.max(4, Math.min(Wv - cw - 4, curL));
-      var clampedT = Math.max(4, Math.min(Hv - ch - 4, curT));
-      cluster.style.left = clampedL.toFixed(1) + 'px';
-      cluster.style.top = clampedT.toFixed(1) + 'px';
-      cluster.style.right = 'auto';
-      cluster.style.bottom = 'auto';
-    }
+  var ew = el.offsetWidth || 80;
+  var eh = el.offsetHeight || 28;
+  var maxL = Math.max(4, Wv - ew - 4);
+  var maxT = Math.max(4, Hv - eh - 4);
+  var clampedL = Math.max(4, Math.min(maxL, rawLeft));
+  var clampedT = Math.max(4, Math.min(maxT, rawTop));
+  el.style.left = clampedL.toFixed(1) + 'px';
+  el.style.top = clampedT.toFixed(1) + 'px';
+  el.style.right = 'auto';
+  el.style.bottom = 'auto';
+  if (storageKey && Wv > 0 && Hv > 0) {
+    try {
+      localStorage.setItem(storageKey, JSON.stringify({
+        rx: clampedL / Wv,
+        ry: clampedT / Hv
+      }));
+    } catch (e) {}
   }
 }
 
-function initNavClusterDrag() {
-  var cluster = document.getElementById('wm-nav-cluster');
-  var vp = document.getElementById('screen-viewport');
-  if (!cluster || !vp || cluster._dragBound) return;
-  cluster._dragBound = true;
+function clampSingleFloatingElement(el, vp) {
+  if (!el || !vp) return;
+  if (!el.style.left || !el.style.top) return;
+  var curL = parseFloat(el.style.left);
+  var curT = parseFloat(el.style.top);
+  if (isNaN(curL) || isNaN(curT)) return;
+  var Wv = vp.clientWidth || vp.offsetWidth || 360;
+  var Hv = vp.clientHeight || vp.offsetHeight || 640;
+  var ew = el.offsetWidth || 80;
+  var eh = el.offsetHeight || 28;
+  if (ew <= 0 || eh <= 0) return;
+  var clampedL = Math.max(4, Math.min(Math.max(4, Wv - ew - 4), curL));
+  var clampedT = Math.max(4, Math.min(Math.max(4, Hv - eh - 4), curT));
+  el.style.left = clampedL.toFixed(1) + 'px';
+  el.style.top = clampedT.toFixed(1) + 'px';
+  el.style.right = 'auto';
+  el.style.bottom = 'auto';
+}
 
-  if (localStorage.getItem('vui_wm_collapsed') === '1') {
-    cluster.classList.add('collapsed');
-    var btn = document.getElementById('wm-collapse-btn');
-    var title = document.getElementById('wm-nav-title');
-    if (btn) btn.innerText = '+';
-    if (title) title.innerText = '🎮 Phím';
+function clampNavClusterPosition() {
+  var vp = document.getElementById('screen-viewport');
+  if (!vp) return;
+  var ids = [
+    'wm-top-bar',
+    'wm-nav-cluster',
+    'screen-watermark-source',
+    'screen-watermark-rotate',
+    'screen-watermark-zoom',
+    'vui-landscape-kbd'
+  ];
+  for (var i = 0; i < ids.length; i++) {
+    clampSingleFloatingElement(document.getElementById(ids[i]), vp);
+  }
+}
+
+function bindFloatingDraggable(el, storageKey, opts) {
+  var vp = document.getElementById('screen-viewport');
+  if (!el || !vp || el._floatingDragBound) return;
+  el._floatingDragBound = true;
+  opts = opts || {};
+
+  // Restore saved position (if any)
+  if (storageKey) {
+    try {
+      var savedPos = JSON.parse(localStorage.getItem(storageKey) || 'null');
+      if (savedPos && typeof savedPos.rx === 'number' && typeof savedPos.ry === 'number') {
+        setTimeout(function() {
+          if (opts.floatingClass) el.classList.add(opts.floatingClass);
+          var Wv = vp.clientWidth || vp.offsetWidth || 360;
+          var Hv = vp.clientHeight || vp.offsetHeight || 640;
+          var ew = el.offsetWidth || 80;
+          var eh = el.offsetHeight || 28;
+          var l = Math.max(4, Math.min(Math.max(4, Wv - ew - 4), savedPos.rx * Wv));
+          var t = Math.max(4, Math.min(Math.max(4, Hv - eh - 4), savedPos.ry * Hv));
+          el.style.left = l.toFixed(1) + 'px';
+          el.style.top = t.toFixed(1) + 'px';
+          el.style.right = 'auto';
+          el.style.bottom = 'auto';
+        }, 80);
+      }
+    } catch (e) {}
   }
 
-  try {
-    var savedPos = JSON.parse(localStorage.getItem('vui_wm_nav_pos_v2') || 'null');
-    if (savedPos && typeof savedPos.rx === 'number' && typeof savedPos.ry === 'number') {
-      setTimeout(function() {
-        var Wv = vp.clientWidth || vp.offsetWidth || 360;
-        var Hv = vp.clientHeight || vp.offsetHeight || 640;
-        var cw = cluster.offsetWidth || 136;
-        var ch = cluster.offsetHeight || 140;
-        var l = Math.max(4, Math.min(Wv - cw - 4, savedPos.rx * Wv));
-        var t = Math.max(4, Math.min(Hv - ch - 4, savedPos.ry * Hv));
-        cluster.style.left = l.toFixed(1) + 'px';
-        cluster.style.top = t.toFixed(1) + 'px';
-        cluster.style.right = 'auto';
-        cluster.style.bottom = 'auto';
-      }, 80);
-    }
-  } catch (e) {}
-
   var dragging = false;
+  var wasDragged = false;
+  var lastDragEndTime = 0;
   var startClientX = 0, startClientY = 0;
   var startLeft = 0, startTop = 0;
+  var lastGripTapTime = 0;
 
   function clientDeltaToViewport(dx, dy) {
     var effRot = getEffectiveRotation();
@@ -7777,16 +7908,27 @@ function initNavClusterDrag() {
     return { x: dx, y: dy };
   }
 
+  function canStartFromTarget(target) {
+    if (!target) return false;
+    if (opts.ignoreSelector && target.closest && target.closest(opts.ignoreSelector)) return false;
+    if (opts.handleSelector) {
+      return !!(target.closest && target.closest(opts.handleSelector));
+    }
+    return true;
+  }
+
   function onStart(e) {
+    if (!canStartFromTarget(e.target)) return;
     e.stopPropagation();
     if (e.touches && e.touches.length > 1) return;
     var pt = e.touches ? e.touches[0] : e;
     dragging = true;
-    navWasDragged = false;
+    wasDragged = false;
+    if (opts.onDragStateChange) opts.onDragStateChange(false, lastDragEndTime);
     startClientX = pt.clientX;
     startClientY = pt.clientY;
-    startLeft = cluster.offsetLeft;
-    startTop = cluster.offsetTop;
+    startLeft = el.offsetLeft;
+    startTop = el.offsetTop;
   }
 
   function onMove(e) {
@@ -7795,51 +7937,80 @@ function initNavClusterDrag() {
     var pt = e.touches ? e.touches[0] : e;
     var rawDx = pt.clientX - startClientX;
     var rawDy = pt.clientY - startClientY;
-    if (!navWasDragged && Math.hypot(rawDx, rawDy) > 7) {
-      navWasDragged = true;
-      cluster.classList.add('dragging');
+    if (!wasDragged && Math.hypot(rawDx, rawDy) > 6) {
+      wasDragged = true;
+      if (opts.floatingClass && !el.classList.contains(opts.floatingClass)) {
+        var oldW = el.offsetWidth;
+        var oldL = el.offsetLeft;
+        var oldT = el.offsetTop;
+        el.classList.add(opts.floatingClass);
+        var newW = el.offsetWidth;
+        startLeft = oldL + Math.max(0, (oldW - newW) / 2);
+        startTop = oldT;
+      }
+      el.classList.add('dragging');
+      if (opts.onDragStateChange) opts.onDragStateChange(true, lastDragEndTime);
       if (navigator.vibrate) navigator.vibrate(10);
     }
-    if (navWasDragged) {
+    if (wasDragged) {
       if (e.cancelable) e.preventDefault();
       var d = clientDeltaToViewport(rawDx, rawDy);
-      var Wv = vp.clientWidth || vp.offsetWidth || 360;
-      var Hv = vp.clientHeight || vp.offsetHeight || 640;
-      var cw = cluster.offsetWidth || 136;
-      var ch = cluster.offsetHeight || 140;
-      var newL = Math.max(4, Math.min(Wv - cw - 4, startLeft + d.x));
-      var newT = Math.max(4, Math.min(Hv - ch - 4, startTop + d.y));
-      cluster.style.left = newL.toFixed(1) + 'px';
-      cluster.style.top = newT.toFixed(1) + 'px';
-      cluster.style.right = 'auto';
-      cluster.style.bottom = 'auto';
+      applyClampedPos(el, vp, startLeft + d.x, startTop + d.y, null);
     }
   }
 
   function onEnd(e) {
-    if (e && e.stopPropagation) e.stopPropagation();
     if (!dragging) return;
+    if (e && e.stopPropagation) e.stopPropagation();
     dragging = false;
-    cluster.classList.remove('dragging');
-    if (navWasDragged) {
-      navLastDragEndTime = Date.now();
-      var Wv = vp.clientWidth || vp.offsetWidth || 360;
-      var Hv = vp.clientHeight || vp.offsetHeight || 640;
-      localStorage.setItem('vui_wm_nav_pos_v2', JSON.stringify({
-        rx: cluster.offsetLeft / Wv,
-        ry: cluster.offsetTop / Hv
-      }));
-      setTimeout(function() { navWasDragged = false; }, 180);
+    el.classList.remove('dragging');
+    if (wasDragged) {
+      lastDragEndTime = Date.now();
+      if (opts.onDragStateChange) opts.onDragStateChange(true, lastDragEndTime);
+      applyClampedPos(el, vp, el.offsetLeft, el.offsetTop, storageKey);
+      setTimeout(function() {
+        wasDragged = false;
+        if (opts.onDragStateChange) opts.onDragStateChange(false, lastDragEndTime);
+      }, 0);
+    } else if (opts.resetGripSelector && e && e.target && e.target.closest && e.target.closest(opts.resetGripSelector)) {
+      var now = Date.now();
+      if (now - lastGripTapTime < 320) {
+        lastGripTapTime = 0;
+        resetFloatingToolbarPos(
+          el.id,
+          storageKey,
+          isEN() ? '📌 Reset toolbar to default position' : '📌 Đã đưa thanh công cụ về vị trí mặc định'
+        );
+      } else {
+        lastGripTapTime = now;
+      }
     }
   }
 
-  cluster.addEventListener('touchstart', onStart, { passive: true });
-  cluster.addEventListener('touchmove', onMove, { passive: false });
-  cluster.addEventListener('touchend', onEnd, { passive: true });
-  cluster.addEventListener('touchcancel', onEnd, { passive: true });
-  cluster.addEventListener('click', function(e) { e.stopPropagation(); });
+  // Capture-phase click listener suppresses accidental child button clicks right after a drag
+  el.addEventListener('click', function(e) {
+    if (wasDragged) {
+      wasDragged = false;
+      if (opts.onDragStateChange) opts.onDragStateChange(false, 0);
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+    }
+  }, true);
 
-  cluster.addEventListener('mousedown', function(e) {
+  // Bubble-phase click listener prevents clicks on toolbar buttons from bubbling to #screen-viewport
+  el.addEventListener('click', function(e) {
+    e.stopPropagation();
+  }, false);
+
+  el.addEventListener('touchstart', onStart, { passive: true });
+  el.addEventListener('touchmove', onMove, { passive: false });
+  el.addEventListener('touchend', onEnd, { passive: true });
+  el.addEventListener('touchcancel', onEnd, { passive: true });
+
+  el.addEventListener('mousedown', function(e) {
+    if (e.button !== 0) return;
+    if (!canStartFromTarget(e.target)) return;
     e.stopPropagation();
     if (Date.now() - lastRealTouchTime < 1000) return;
     onStart(e);
@@ -7851,6 +8022,76 @@ function initNavClusterDrag() {
   window.addEventListener('mouseup', function(e) {
     if (Date.now() - lastRealTouchTime < 1000 || !dragging) return;
     onEnd(e);
+  });
+
+  // Accessible keyboard arrow-key movement (15px per step, clamped to viewport)
+  var KEY_DELTAS = {
+    ArrowLeft: [-15, 0],
+    ArrowRight: [15, 0],
+    ArrowUp: [0, -15],
+    ArrowDown: [0, 15]
+  };
+  el.addEventListener('keydown', function(e) {
+    var delta = KEY_DELTAS[e.key];
+    if (!delta) return;
+    var t = e.target;
+    if (!t || (!t.classList.contains('drag-handle') && t !== el)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    if (opts.floatingClass && !el.classList.contains(opts.floatingClass)) {
+      var oldW = el.offsetWidth;
+      var oldL = el.offsetLeft;
+      var oldT = el.offsetTop;
+      el.classList.add(opts.floatingClass);
+      var newW = el.offsetWidth;
+      applyClampedPos(el, vp, oldL + Math.max(0, (oldW - newW) / 2) + delta[0], oldT + delta[1], storageKey);
+      return;
+    }
+    applyClampedPos(el, vp, el.offsetLeft + delta[0], el.offsetTop + delta[1], storageKey);
+  });
+}
+
+function initNavClusterDrag() {
+  var topBar = document.getElementById('wm-top-bar');
+  if (topBar && localStorage.getItem('vui_wm_top_collapsed') === '1') {
+    topBar.classList.add('collapsed');
+    var topColBtn = document.getElementById('wm-top-collapse-btn');
+    if (topColBtn) topColBtn.innerText = '+';
+  }
+
+  var cluster = document.getElementById('wm-nav-cluster');
+  if (cluster && localStorage.getItem('vui_wm_collapsed') === '1') {
+    cluster.classList.add('collapsed');
+    var btn = document.getElementById('wm-collapse-btn');
+    var title = document.getElementById('wm-nav-title');
+    if (btn) btn.innerText = '+';
+    if (title) title.innerText = isEN() ? '🎮 Keys' : '🎮 Phím';
+  }
+
+  bindFloatingDraggable(topBar, 'vui_wm_top_pos_v1', {
+    resetGripSelector: '#wm-top-drag-handle',
+    onDragStateChange: function(dragged, endTime) {
+      topBarWasDragged = dragged;
+      topBarLastDragEndTime = endTime;
+    }
+  });
+
+  bindFloatingDraggable(cluster, 'vui_wm_nav_pos_v2', {
+    resetGripSelector: '#wm-drag-header',
+    onDragStateChange: function(dragged, endTime) {
+      navWasDragged = dragged;
+      navLastDragEndTime = endTime;
+    }
+  });
+
+  bindFloatingDraggable(document.getElementById('screen-watermark-source'), 'vui_wm_src_pos_v1', {});
+  bindFloatingDraggable(document.getElementById('screen-watermark-rotate'), 'vui_wm_rot_pos_v1', {});
+  bindFloatingDraggable(document.getElementById('screen-watermark-zoom'), 'vui_wm_zoom_pos_v1', {});
+  bindFloatingDraggable(document.getElementById('vui-landscape-kbd'), 'vui_wm_kbd_pos_v1', {
+    handleSelector: '#vkbd-drag-handle',
+    ignoreSelector: '.vkbd-dock-btn',
+    floatingClass: 'floating-pos',
+    resetGripSelector: '#vkbd-drag-handle'
   });
 }
 
@@ -9509,7 +9750,10 @@ function onQuickInputFocus(ev) {
 }
 
 function onQuickInputBlur(ev) {
-  lastQuickInputBlurTime = Date.now();
+  var barNow = document.getElementById('smart-input-bar');
+  if (barNow && barNow.classList.contains('show')) {
+    lastQuickInputBlurTime = Date.now();
+  }
   if (!isMobileTouchOS()) {
     setTimeout(ensureDesktopImeBridgeFocus, 25);
   }
@@ -10554,6 +10798,32 @@ function applyUILanguage() {
   if (attBtn) attBtn.title = en
     ? 'Teleport Files (Photos, Screenshots, Video, Audio, Docs) directly to the remote device'
     : 'Gửi trực tiếp File (Hình ảnh, Video, Âm thanh, Tài liệu) sang máy được điều khiển';
+
+  var topGrip = document.getElementById('wm-top-drag-handle');
+  if (topGrip) {
+    topGrip.title = en
+      ? 'Drag to move toolbar anywhere (never blocks window Title Bars!) — Double-tap to reset'
+      : 'Kéo để di chuyển thanh công cụ đi bất kỳ đâu (tránh che Title Bar cửa sổ) — Chạm đúp để về vị trí gốc';
+    topGrip.setAttribute('aria-label', en
+      ? 'Drag to move main toolbar, or use arrow keys'
+      : 'Kéo để di chuyển thanh công cụ chính, hoặc dùng phím mũi tên');
+  }
+  var topColBtn = document.getElementById('wm-top-collapse-btn');
+  if (topColBtn) {
+    topColBtn.title = en
+      ? 'Collapse / Expand main toolbar so it never covers window Title Bars'
+      : 'Thu gọn / Mở rộng thanh công cụ để không che thanh tiêu đề cửa sổ';
+  }
+  var navCluster = document.getElementById('wm-nav-cluster');
+  var navTitle = document.getElementById('wm-nav-title');
+  if (navCluster && navTitle) {
+    var isNavCol = navCluster.classList.contains('collapsed');
+    navTitle.innerText = isNavCol ? (en ? '🎮 Keys' : '🎮 Phím') : (en ? 'Navigate' : 'Điều hướng');
+  }
+  var kbdEl = document.getElementById('vui-landscape-kbd');
+  if (kbdEl && kbdEl.classList.contains('show')) {
+    renderLandscapeKeyboard();
+  }
 
   var sleepOverlay = document.getElementById('screen-sleep-overlay');
   if (sleepOverlay) {
