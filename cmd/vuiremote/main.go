@@ -2236,9 +2236,9 @@ func getLinuxPCMjpegStreamFrame(display, xauth, grabSize, grabInput string, scal
 			}()
 
 			scrW, _ := getLinuxScreenDimensions()
-			vfArg := "format=yuvj444p"
+			vfArg := "format=yuvj420p"
 			if scaleW > 0 && scaleW < scrW {
-				vfArg = fmt.Sprintf("scale=%d:-1:flags=lanczos,format=yuvj444p", scaleW)
+				vfArg = fmt.Sprintf("scale=%d:-1:flags=bicubic,format=yuvj420p", scaleW)
 			}
 			cmd := exec.CommandContext(c, "ffmpeg", "-nostats", "-loglevel", "error",
 				"-fflags", "nobuffer",
@@ -2250,9 +2250,9 @@ func getLinuxPCMjpegStreamFrame(display, xauth, grabSize, grabInput string, scal
 				"-i", grabInput,
 				"-vf", vfArg,
 				"-vcodec", "mjpeg",
-				"-qscale:v", "2",
-				"-qmin", "1",
-				"-qmax", "3",
+				"-qscale:v", "4",
+				"-qmin", "2",
+				"-qmax", "5",
 				"-flush_packets", "1",
 				"-f", "image2pipe",
 				"-",
@@ -2378,7 +2378,7 @@ func captureScreenLinuxPC(targetW int) ([]byte, error) {
 		return frame, nil
 	}
 
-	vfArg := "format=yuvj444p"
+	vfArg := "format=yuvj420p"
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2500*time.Millisecond)
 	defer cancel()
@@ -2390,7 +2390,7 @@ func captureScreenLinuxPC(targetW int) ([]byte, error) {
 		"-i", grabInput,
 		"-vf", vfArg,
 		"-vframes", "1",
-		"-q:v", "2",
+		"-q:v", "4",
 		"-f", "image2",
 		"-",
 	)
@@ -2403,7 +2403,7 @@ func captureScreenLinuxPC(targetW int) ([]byte, error) {
 			"-i", display,
 			"-vf", vfArg,
 			"-vframes", "1",
-			"-q:v", "2",
+			"-q:v", "4",
 			"-f", "image2",
 			"-",
 		)
@@ -2423,7 +2423,7 @@ func captureScreenLinuxPC(targetW int) ([]byte, error) {
 			"-i", ":0",
 			"-vf", vfArg,
 			"-vframes", "1",
-			"-q:v", "2",
+			"-q:v", "4",
 			"-f", "image2",
 			"-",
 		)
@@ -2667,6 +2667,10 @@ func enqueueSequencedPCInput(seq int64, fn func()) {
 
 func clearPCOrderedInputQueue() {
 	atomic.AddUint64(&pcInputCancelEpoch, 1)
+	pcSeqMu.Lock()
+	pcPendingSeqMap = make(map[int64]func())
+	pcNextExpectedSeq = 0
+	pcSeqMu.Unlock()
 	if pcOrderedInputCh == nil {
 		return
 	}
@@ -3121,7 +3125,7 @@ def pump_gtk(duration_sec):
         rem = end_t - time.monotonic()
         if rem <= 0:
             break
-        time.sleep(min(0.0015, rem))
+        time.sleep(min(0.001, rem))
 
 def tap_x11_key(kname, count):
     if count <= 0:
@@ -3130,10 +3134,10 @@ def tap_x11_key(kname, count):
         kc = KC_MAP[kname]
         for _ in range(count):
             libXtst.XTestFakeKeyEvent(x11_dpy, kc, 1, 0)
-            libX11.XFlush(x11_dpy)
+            libX11.XSync(x11_dpy, 0)
             pump_gtk(0.0015)
             libXtst.XTestFakeKeyEvent(x11_dpy, kc, 0, 0)
-            libX11.XFlush(x11_dpy)
+            libX11.XSync(x11_dpy, 0)
             pump_gtk(0.0015)
     else:
         subprocess.run(["xdotool", "key", "--clearmodifiers", "--repeat", str(count), "--delay", "4", kname], stderr=subprocess.DEVNULL)
@@ -3149,13 +3153,13 @@ def trigger_x11_paste_combo(paste_key):
         if use_shift:
             libXtst.XTestFakeKeyEvent(x11_dpy, shift_kc, 1, 0)
         libXtst.XTestFakeKeyEvent(x11_dpy, v_kc, 1, 0)
-        libX11.XFlush(x11_dpy)
+        libX11.XSync(x11_dpy, 0)
         pump_gtk(0.002)
         libXtst.XTestFakeKeyEvent(x11_dpy, v_kc, 0, 0)
         if use_shift:
             libXtst.XTestFakeKeyEvent(x11_dpy, shift_kc, 0, 0)
         libXtst.XTestFakeKeyEvent(x11_dpy, ctrl_kc, 0, 0)
-        libX11.XFlush(x11_dpy)
+        libX11.XSync(x11_dpy, 0)
     else:
         subprocess.run(["xdotool", "key", "--clearmodifiers", paste_key], stderr=subprocess.DEVNULL)
 
@@ -3259,23 +3263,23 @@ def execute_req(req, done_ev):
         if bksp > 0:
             tap_x11_key("BackSpace", bksp)
             if raw_txt != "" or ma != 0:
-                pump_gtk(0.005)
+                pump_gtk(0.008)
 
         if raw_txt == "\n":
             tap_x11_key("Return", 1)
-            pump_gtk(0.005)
+            pump_gtk(0.004)
         elif raw_txt != "":
             txt = unicodedata.normalize("NFC", raw_txt)
             has_win, paste_key = get_window_paste_info()
             if not has_win:
                 subprocess.run(["xdotool", "type", "--clearmodifiers", "--delay", "4", "--", txt], stderr=subprocess.DEVNULL)
-                pump_gtk(0.012)
+                pump_gtk(0.010)
             else:
                 cb.set_text(txt, -1)
                 cb_pri.set_text(txt, -1)
-                pump_gtk(0.003 if is_direct else 0.008)
+                pump_gtk(0.003 if is_direct else 0.006)
                 trigger_x11_paste_combo(paste_key)
-                pump_gtk(0.008 if is_direct else 0.025)
+                pump_gtk(0.008 if is_direct else 0.020)
 
         if ma != 0:
             tap_x11_key("Left" if ma < 0 else "Right", abs(ma))
@@ -3311,6 +3315,7 @@ def stdin_loop():
         ev.wait()
     GLib.idle_add(Gtk.main_quit)
 
+GLib.timeout_add(4, lambda: True)
 tw = threading.Thread(target=_win_watcher_loop, daemon=True)
 tw.start()
 t = threading.Thread(target=stdin_loop, daemon=True)
@@ -6693,18 +6698,22 @@ function clearInteractiveTimers() {
 
 function getAdaptiveFrameDelayMs() {
   var now = Date.now();
-  var isActive = (now - lastActivityTime < 15000) ||
-                 (now - lastInteractiveBoostTime < 8000) ||
-                 (typeof lastDirectTypeTime === 'number' && (now - lastDirectTypeTime < 8000));
+  var isTypingNow = (typeof lastDirectTypeTime === 'number' && (now - lastDirectTypeTime < 400));
+  var isActive = isTypingNow ||
+                 (now - lastActivityTime < 12000) ||
+                 (now - lastInteractiveBoostTime < 6000);
 
   if (isCurrentDevPC()) {
-    return isActive ? 4 : 30;
+    if (isTypingNow) return 75;
+    return isActive ? 42 : 120;
   }
   if (currentDev === 'tx3') {
-    return isActive ? 10 : 65;
+    if (isTypingNow) return 85;
+    return isActive ? 55 : 150;
   }
   // Máy chiếu KAW / Hyundai hoặc thiết bị khác
-  return isActive ? 35 : 120;
+  if (isTypingNow) return 95;
+  return isActive ? 65 : 180;
 }
 
 function scheduleNextAutoFrame() {
@@ -7037,6 +7046,9 @@ var DIRECT_SENTINEL = '\u200B';
 var suppressQuickInputEvent = false;
 var directSentText = '';
 var directSentCaret = 0;
+var vkbdWordBuffer = '';
+var directBufferIdleTimer = null;
+var ignoreImeCommitUntil = 0;
 var directInputQueue = [];
 var directQueueBusy = false;
 var lastDirectTypeTime = 0;
@@ -7116,14 +7128,13 @@ function enqueueDirectTextDelta(bksp, text, isRepeat) {
     var lastRep = directInputQueue[directInputQueue.length - 1];
     if (lastRep.type === 'delta' && lastRep.repeat && lastRep.dev === currentDev) {
       if (text === '' && bksp > 0 && lastRep.text === '') {
-        lastRep.bksp = Math.min(6, lastRep.bksp + bksp);
+        // Không bao giờ cộng dồn (backlog) nhiều phím xóa lùi khi đang giữ phím để buông tay ra là dừng ngay lập tức
+        lastRep.bksp = 1;
         pumpDirectInputQueue();
         return;
       }
       if (bksp === 0 && text !== '' && lastRep.bksp === 0) {
-        if (Array.from(lastRep.text).length < 6) {
-          lastRep.text += text;
-        }
+        lastRep.text = text;
         pumpDirectInputQueue();
         return;
       }
@@ -7156,7 +7167,7 @@ function enqueueDirectTextDelta(bksp, text, isRepeat) {
     text: text,
     repeat: !!isRepeat
   });
-  // Gửi tức thì (0ms delay) cho ký tự đầu tiên khi đường truyền đang rảnh; nếu có xóa lùi (Unikey/IBus tách sự kiện bksp + bù chữ dấu) hoặc đang có gói tin bay, gom siêu tốc trong 3ms
+  // Gửi tức thì (0ms delay) cho ký tự đầu tiên khi đường truyền đang rảnh; nếu có xóa lùi (Unikey/IBus tách sự kiện bksp + bù chữ dấu) hoặc đang có gói tin bay, gom siêu tốc trong 2ms
   if (isRepeat || (bksp === 0 && text !== '' && directInFlightCount === 0 && !deltaCoalesceTimer)) {
     pumpDirectInputQueue(true);
   } else {
@@ -7169,7 +7180,7 @@ function scheduleDeltaPump() {
   deltaCoalesceTimer = setTimeout(function() {
     deltaCoalesceTimer = null;
     pumpDirectInputQueue(true);
-  }, 3);
+  }, 2);
 }
 
 function enqueueDirectKey(code, label, isRepeat) {
@@ -7178,7 +7189,8 @@ function enqueueDirectKey(code, label, isRepeat) {
   if (isRepeat && directInputQueue.length > 0) {
     var last = directInputQueue[directInputQueue.length - 1];
     if (last.type === 'key' && last.repeat && last.code === code && last.dev === currentDev) {
-      last.count = Math.min(6, (last.count || 1) + 1);
+      // Giữ tối đa 1 lệnh lặp chờ sẵn để buông tay ra là con trỏ dừng ngay lập tức, không bao giờ bị trôi đà
+      last.count = 1;
       pumpDirectInputQueue(true);
       return;
     }
@@ -7296,14 +7308,46 @@ function setQuickInputCaret(charIdx) {
   virtualQuickInputCaret = charIdx || 0;
 }
 
-function resetDirectBuffer() {
+function scheduleDirectBufferAutoFlush() {
+  if (directBufferIdleTimer) {
+    clearTimeout(directBufferIdleTimer);
+  }
+  directBufferIdleTimer = setTimeout(function() {
+    directBufferIdleTimer = null;
+    var inp = document.getElementById('quick-txt-input');
+    if (inp && inp._isComposing) {
+      scheduleDirectBufferAutoFlush();
+      return;
+    }
+    resetDirectBuffer(true);
+  }, 1500);
+}
+
+function resetDirectBuffer(forceAbortIme) {
+  if (directBufferIdleTimer) {
+    clearTimeout(directBufferIdleTimer);
+    directBufferIdleTimer = null;
+  }
   directSentText = '';
   directSentCaret = 0;
   virtualQuickInputCaret = 0;
+  vkbdWordBuffer = '';
   var inp = document.getElementById('quick-txt-input');
   if (inp) {
+    var hadActiveContent = !!(inp._isComposing || (inp.value && inp.value !== DIRECT_SENTINEL));
     suppressQuickInputEvent = true;
+    inp._isComposing = false;
     inp.value = DIRECT_SENTINEL;
+    if (forceAbortIme !== false && hadActiveContent) {
+      ignoreImeCommitUntil = Date.now() + 140;
+      if (document.activeElement === inp) {
+        try {
+          inp.blur();
+          inp.value = DIRECT_SENTINEL;
+          inp.focus({ preventScroll: true });
+        } catch (e) {}
+      }
+    }
     try { inp.setSelectionRange(1, 1); } catch(e) {}
     suppressQuickInputEvent = false;
   }
@@ -7329,7 +7373,7 @@ function applyInputModeUI() {
 function moveRemoteCaret(dir) {
   recordActivity();
   if (navigator.vibrate) navigator.vibrate(8);
-  resetDirectBuffer();
+  resetDirectBuffer(true);
   if (dir < 0) {
     enqueueDirectKey(21, 'Sang trái ◀');
   } else {
@@ -7983,23 +8027,38 @@ function onVkbdChar(ch, fromTouch) {
     }
     return;
   }
-  var inp = document.getElementById('quick-txt-input');
-  var rawVal = inp ? (inp.value || '').replace(/\u200B/g, '') : directSentText;
-  var before = rawVal.normalize ? rawVal.normalize('NFC') : rawVal;
-  var nextVal = applyVietnameseTelex(before, ch);
-  if (nextVal.normalize) nextVal = nextVal.normalize('NFC');
-  if (inp) {
-    suppressQuickInputEvent = true;
-    inp.value = DIRECT_SENTINEL + nextVal;
-    suppressQuickInputEvent = false;
-  }
   if (vkbdShift) {
     vkbdShift = false;
     renderLandscapeKeyboard();
   }
-  onQuickInputChanged();
-  if (ch === ' ' || ch === '.' || ch === ',' || ch === '/' || ch === ':' || ch === ';' || ch === '!' || ch === '?') {
-    resetDirectBuffer();
+  // Khi đang ở chế độ Tiếng Anh / Mật khẩu hoặc gõ dấu cách / dấu câu: gửi thẳng 1:1 không qua bộ đệm DOM
+  if (!vkbdTelex || remoteIsLocked) {
+    vkbdWordBuffer = '';
+    enqueueDirectTextDelta(0, ch);
+    return;
+  }
+  var before = vkbdWordBuffer.normalize ? vkbdWordBuffer.normalize('NFC') : vkbdWordBuffer;
+  var nextVal = applyVietnameseTelex(before, ch);
+  if (nextVal.normalize) nextVal = nextVal.normalize('NFC');
+
+  var oldChars = Array.from(before);
+  var newChars = Array.from(nextVal);
+  var p = 0;
+  var minLen = Math.min(oldChars.length, newChars.length);
+  while (p < minLen && oldChars[p] === newChars[p]) {
+    p++;
+  }
+  var bkspCount = oldChars.length - p;
+  var appendStr = newChars.slice(p).join('');
+
+  if (ch === ' ' || ch === '.' || ch === ',' || ch === '/' || ch === ':' || ch === ';' || ch === '!' || ch === '?' || ch === '-' || ch === '(' || ch === ')') {
+    vkbdWordBuffer = '';
+  } else {
+    vkbdWordBuffer = nextVal;
+    scheduleDirectBufferAutoFlush();
+  }
+  if (bkspCount > 0 || appendStr.length > 0) {
+    enqueueDirectTextDelta(bkspCount, appendStr);
   }
 }
 
@@ -8007,7 +8066,6 @@ function onVkbdAction(act, fromTouch, isRepeat) {
   if (!fromTouch && act !== 'NATIVE' && (Date.now() - lastVkbdTouchTime < 450)) return;
   recordActivity();
   if (navigator.vibrate) navigator.vibrate(10);
-  var inp = document.getElementById('quick-txt-input');
   if (act === 'SHIFT') {
     vkbdShift = !vkbdShift;
     renderLandscapeKeyboard();
@@ -8022,7 +8080,7 @@ function onVkbdAction(act, fromTouch, isRepeat) {
     vkbdTelex = !vkbdTelex;
     try { localStorage.setItem('vui_vkbd_telex', vkbdTelex ? '1' : '0'); } catch(e) {}
     renderLandscapeKeyboard();
-    resetDirectBuffer();
+    resetDirectBuffer(true);
     flashStatus(vkbdTelex ? '🇻🇳 Đã bật gõ Tiếng Việt Telex' : '🇬🇧 Đã chuyển sang gõ Tiếng Anh / Mật khẩu', true);
   } else if (act === 'NATIVE') {
     openVoiceReviewPanel('', true);
@@ -8038,23 +8096,17 @@ function onVkbdAction(act, fromTouch, isRepeat) {
     }
     editVoiceReviewWithVkbdEnter();
   } else if (act === 'BKSP') {
-    var rawB = inp ? (inp.value || '').replace(/\u200B/g, '') : '';
-    var charsB = Array.from(rawB.normalize ? rawB.normalize('NFC') : rawB);
-    if (charsB.length > 0) {
+    if (!isRepeat && vkbdWordBuffer.length > 0) {
+      var charsB = Array.from(vkbdWordBuffer);
       charsB.pop();
-      var nextB = charsB.join('');
-      if (inp) {
-        suppressQuickInputEvent = true;
-        inp.value = DIRECT_SENTINEL + nextB;
-        suppressQuickInputEvent = false;
-      }
-      onQuickInputChanged();
+      vkbdWordBuffer = charsB.join('');
     } else {
-      resetDirectBuffer();
-      enqueueDirectTextDelta(1, '', !!isRepeat);
+      vkbdWordBuffer = '';
     }
+    resetDirectBuffer(true);
+    enqueueDirectTextDelta(1, '', !!isRepeat);
   } else if (act === 'ENTER') {
-    resetDirectBuffer();
+    resetDirectBuffer(true);
     if (vkbdShift) {
       vkbdShift = false;
       renderLandscapeKeyboard();
@@ -9272,11 +9324,9 @@ function togglePCDragLock() {
 function sendPCHotkey(combo, label) {
   recordActivity();
   if (navigator.vibrate) navigator.vibrate(15);
+  resetDirectBuffer(true);
   flashStatus('⌨️ ' + (label || combo), true);
-  var xhr = new XMLHttpRequest();
-  xhr.open('GET', '/api/touch?type=hotkey&key=' + encodeURIComponent(combo) + getDevParam() + '&t=' + Date.now(), true);
-  xhr.send();
-  triggerInteractiveCapture();
+  enqueueDirectHotkey(combo, label || combo, false);
 }
 
 function rotateScreenDeltaToVp(deltaScreenX, deltaScreenY) {
@@ -9297,6 +9347,9 @@ function onTouchStart(e) {
     return;
   }
   recordActivity();
+  // Ngay khoảnh khắc chạm/click lên màn hình để đặt con trỏ mới: dừng tức thì mọi đà lặp phím đang trôi và xóa sạch bộ đệm từ cũ để không bao giờ nhả chữ cũ ra vị trí mới
+  cancelPendingKeyRepeats();
+  resetDirectBuffer(true);
 
   if (pointerMoveTimer) {
     clearTimeout(pointerMoveTimer);
@@ -10119,13 +10172,13 @@ function handlePhysicalSpecialOrShortcut(ev) {
   if (ev.key === 'Backspace') {
     var inp = document.getElementById('quick-txt-input');
     var cleanVal = inp ? (inp.value || '').replace(/\u200B/g, '') : '';
-    if (document.activeElement !== inp || cleanVal.length === 0) {
+    if (ev.repeat || document.activeElement !== inp || cleanVal.length === 0) {
       ev.preventDefault();
-      resetDirectBuffer();
+      resetDirectBuffer(true);
       enqueueDirectTextDelta(1, '', !!ev.repeat);
       return true;
     }
-    // Khi inp đang có chữ trong từ hiện tại, để trình duyệt tự xóa 1 ký tự trong inp và kích hoạt onQuickInputChanged (hỗ trợ hoàn hảo Unikey/IBus trên bàn phím vật lý)
+    // Khi bấm đơn (không lặp) và inp đang có chữ trong từ hiện tại, để trình duyệt tự xóa 1 ký tự trong inp và kích hoạt onQuickInputChanged (hỗ trợ hoàn hảo Unikey/IBus trên bàn phím vật lý)
     return false;
   }
 
@@ -10194,7 +10247,7 @@ function handleGlobalPaste(ev) {
   var pastedText = cd.getData ? cd.getData('text/plain') : '';
   if (pastedText) {
     ev.preventDefault();
-    resetDirectBuffer();
+    resetDirectBuffer(true);
     enqueueDirectTextDelta(0, pastedText);
     flashStatus('📋 Đã dán văn bản sang ' + (nameMap[currentDev] || currentDev), true);
   }
@@ -10260,7 +10313,7 @@ function onQuickInputChanged() {
 
   // Khi người dùng bấm Backspace trên bàn phím ảo hệ thống lúc bộ đệm từ đang rỗng (xóa mất ký tự sentinel \u200B)
   if (!hadSentinel && cleanVal.length === 0 && directSentText.length === 0) {
-    resetDirectBuffer();
+    resetDirectBuffer(false);
     if (isVoiceReviewOpen()) {
       editVoiceReviewWithVkbdBksp();
     } else {
@@ -10288,20 +10341,26 @@ function onQuickInputChanged() {
   var bkspCount = oldChars.length - p;
   var appendStr = newChars.slice(p).join('');
 
+  // Chặn hoàn toàn hiện tượng bộ gõ hệ điều hành tự nhả lại (commit) từ cũ đã bị hủy ngay sau khi vừa chuyển con trỏ / chạm màn hình
+  if (Date.now() < ignoreImeCommitUntil && directSentText === '' && bkspCount === 0 && Array.from(appendStr).length > 1) {
+    resetDirectBuffer(false);
+    return;
+  }
+
   // Nếu ô Xem & sửa chữ giọng nói (#voice-review-panel) đang mở, chuyển toàn bộ nội dung nhập vào ô này chứ không gửi thẳng tới máy đích
   if (isVoiceReviewOpen()) {
     if (appendStr.length > 0) {
       openVoiceReviewPanel(appendStr, voiceReviewUseNativeKbd);
     }
-    resetDirectBuffer();
+    resetDirectBuffer(true);
     return;
   }
 
-  // Phát hiện tự động khi người dùng dùng Mic của bàn phím trên điện thoại (nhận dạng giọng nói chèn cả cụm từ / từ dài >= 4 ký tự cùng lúc):
+  // Phát hiện tự động khi người dùng dùng Mic của bàn phím trên điện thoại (nhận dạng giọng nói chèn cả cụm từ có dấu cách hoặc chuỗi dài cùng lúc):
   // Đưa ngay vào ô Textarea chữ to rõ (#voice-review-panel) để xem và chỉnh sửa thủ công trước khi gửi!
   var appendChars = Array.from(appendStr);
-  if (isMobileTouchOS() && ((appendStr.trim().indexOf(' ') !== -1 && appendChars.length >= 3) || appendChars.length >= 4)) {
-    resetDirectBuffer();
+  if (isMobileTouchOS() && ((appendStr.trim().indexOf(' ') !== -1 && appendChars.length >= 4) || appendChars.length >= 12)) {
+    resetDirectBuffer(true);
     openVoiceReviewPanel(normNew, true);
     flashStatus(isEN()
       ? '🎙️ Voice dictation captured in Review Box — Edit & tap Send!'
@@ -10316,18 +10375,25 @@ function onQuickInputChanged() {
   }
 
   if (hasNewline) {
-    resetDirectBuffer();
+    resetDirectBuffer(true);
     enqueueDirectKey(66, 'Enter ↵');
     return;
   }
+
+  // Ngay khi kết thúc 1 từ (gõ dấu cách hoặc dấu câu) và không còn trong trạng thái gạch chân IME:
+  // xóa trắng bộ đệm #quick-txt-input ngay lập tức để ô ẩn KHÔNG BAO GIỜ ngậm lại từ cũ!
+  if (!inp._isComposing && cleanVal.length > 0 && /[\s.,!?;:()\[\]{}"'\/\-]$/.test(cleanVal)) {
+    resetDirectBuffer(true);
+    return;
+  }
+
+  scheduleDirectBufferAutoFlush();
 
   if (!hadSentinel && !inp._isComposing) {
     suppressQuickInputEvent = true;
     inp.value = DIRECT_SENTINEL + cleanVal;
     try { inp.setSelectionRange(inp.value.length, inp.value.length); } catch(e) {}
     suppressQuickInputEvent = false;
-  } else if (!inp._isComposing && cleanVal.length > 120 && /\s$/.test(cleanVal)) {
-    resetDirectBuffer();
   }
 }
 
@@ -11063,12 +11129,9 @@ function getDevParam() {
 
 function key(code, name, holdMs) {
   recordActivity();
-  holdMs = holdMs || 12;
+  resetDirectBuffer(true);
   flashStatus('Đã gửi: ' + name, true);
-  var xhr = new XMLHttpRequest();
-  xhr.open('GET', '/api/key?code=' + code + '&hold=' + holdMs + getDevParam() + '&t=' + Date.now(), true);
-  xhr.send();
-  triggerInteractiveCapture();
+  enqueueDirectKey(code, name, false);
 }
 
 function cmd(action, name) {
@@ -12230,6 +12293,8 @@ func main() {
 		case "tap":
 			px := parseCoord("px", 0.5)
 			py := parseCoord("py", 0.5)
+			atomic.AddUint64(&pcInputCancelEpoch, 1)
+			resetRemoteSimState()
 			if !isAndroid() {
 				enqueuePCMouseInput(func() {
 					sendLinuxPCTouchTap(px, py)
@@ -12243,6 +12308,8 @@ func main() {
 		case "doubletap":
 			px := parseCoord("px", -1)
 			py := parseCoord("py", -1)
+			atomic.AddUint64(&pcInputCancelEpoch, 1)
+			resetRemoteSimState()
 			if !isAndroid() {
 				enqueuePCMouseInput(func() {
 					sendLinuxPCDoubleTap(px, py)
@@ -12584,9 +12651,15 @@ func main() {
 							}
 						}
 						if st.Text != "" {
-							b64 := base64.StdEncoding.EncodeToString([]byte(st.Text))
-							escaped := strings.ReplaceAll(st.Text, " ", "%s")
-							runSh(fmt.Sprintf("am broadcast -a ADB_INPUT_B64 --es msg '%s' 2>/dev/null || am broadcast -a ADB_INPUT_TEXT --es msg '%s' 2>/dev/null || input text '%s'", b64, st.Text, escaped))
+							sentViaUinput := false
+							if isPureASCIIPrintable(st.Text) {
+								sentViaUinput = sendDirectLinuxTextViaUinput(st.Text, false)
+							}
+							if !sentViaUinput {
+								b64 := base64.StdEncoding.EncodeToString([]byte(st.Text))
+								escaped := strings.ReplaceAll(st.Text, " ", "%s")
+								runSh(fmt.Sprintf("am broadcast -a ADB_INPUT_B64 --es msg '%s' 2>/dev/null || am broadcast -a ADB_INPUT_TEXT --es msg '%s' 2>/dev/null || input text '%s'", b64, st.Text, escaped))
+							}
 						}
 						if stepMA < 0 {
 							for i := 0; i < -stepMA; i++ {
