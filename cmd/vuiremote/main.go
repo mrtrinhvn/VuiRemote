@@ -7933,6 +7933,10 @@ function bindFloatingDraggable(el, storageKey, opts) {
 
   function onMove(e) {
     if (!dragging) return;
+    if (!e.touches && typeof e.buttons === 'number' && (e.buttons & 1) === 0) {
+      onEnd(e);
+      return;
+    }
     e.stopPropagation();
     var pt = e.touches ? e.touches[0] : e;
     var rawDx = pt.clientX - startClientX;
@@ -8013,14 +8017,23 @@ function bindFloatingDraggable(el, storageKey, opts) {
     if (!canStartFromTarget(e.target)) return;
     e.stopPropagation();
     if (Date.now() - lastRealTouchTime < 1000) return;
+    if (e.cancelable) e.preventDefault();
     onStart(e);
   });
   window.addEventListener('mousemove', function(e) {
     if (Date.now() - lastRealTouchTime < 1000 || !dragging) return;
     onMove(e);
-  });
+  }, true);
   window.addEventListener('mouseup', function(e) {
-    if (Date.now() - lastRealTouchTime < 1000 || !dragging) return;
+    if (!dragging) return;
+    onEnd(e);
+  }, true);
+  el.addEventListener('mouseup', function(e) {
+    if (!dragging) return;
+    onEnd(e);
+  });
+  window.addEventListener('blur', function(e) {
+    if (!dragging) return;
     onEnd(e);
   });
 
@@ -9440,7 +9453,7 @@ function bindGestures() {
   overlays.forEach(function(id) {
     var el = document.getElementById(id);
     if (el) {
-      ['touchstart', 'touchmove', 'touchend', 'mousedown', 'mousemove', 'mouseup', 'click'].forEach(function(ev) {
+      ['touchstart', 'touchmove', 'touchend', 'mousedown', 'mousemove', 'click'].forEach(function(ev) {
         el.addEventListener(ev, function(e) { e.stopPropagation(); }, { passive: false });
       });
     }
