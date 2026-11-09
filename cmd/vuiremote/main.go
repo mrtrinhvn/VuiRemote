@@ -3131,13 +3131,13 @@ def tap_x11_key(kname, count):
         for _ in range(count):
             libXtst.XTestFakeKeyEvent(x11_dpy, kc, 1, 0)
             libX11.XFlush(x11_dpy)
-            pump_gtk(0.0025)
+            pump_gtk(0.0015)
             libXtst.XTestFakeKeyEvent(x11_dpy, kc, 0, 0)
             libX11.XFlush(x11_dpy)
-            pump_gtk(0.0025)
+            pump_gtk(0.0015)
     else:
-        subprocess.run(["xdotool", "key", "--clearmodifiers", "--repeat", str(count), "--delay", "6", kname], stderr=subprocess.DEVNULL)
-        pump_gtk(0.010)
+        subprocess.run(["xdotool", "key", "--clearmodifiers", "--repeat", str(count), "--delay", "4", kname], stderr=subprocess.DEVNULL)
+        pump_gtk(0.006)
 
 def trigger_x11_paste_combo(paste_key):
     ctrl_kc = KC_MAP.get("Control_L", 0)
@@ -3150,7 +3150,7 @@ def trigger_x11_paste_combo(paste_key):
             libXtst.XTestFakeKeyEvent(x11_dpy, shift_kc, 1, 0)
         libXtst.XTestFakeKeyEvent(x11_dpy, v_kc, 1, 0)
         libX11.XFlush(x11_dpy)
-        pump_gtk(0.003)
+        pump_gtk(0.002)
         libXtst.XTestFakeKeyEvent(x11_dpy, v_kc, 0, 0)
         if use_shift:
             libXtst.XTestFakeKeyEvent(x11_dpy, shift_kc, 0, 0)
@@ -3217,31 +3217,30 @@ def execute_fast_mouse(req):
         return True
     return False
 
-_win_cache_ts = 0.0
 _win_cache_has = True
 _win_cache_paste = "ctrl+v"
 
-def get_window_paste_info():
-    global _win_cache_ts, _win_cache_has, _win_cache_paste
-    now = time.monotonic()
-    if now - _win_cache_ts < 2.5:
-        return _win_cache_has, _win_cache_paste
-    _win_cache_ts = now
-    try:
-        wid = subprocess.check_output(["xdotool", "getactivewindow"], stderr=subprocess.DEVNULL).decode().strip()
-        if not wid:
+def _win_watcher_loop():
+    global _win_cache_has, _win_cache_paste
+    while True:
+        try:
+            wid = subprocess.check_output(["xdotool", "getactivewindow"], stderr=subprocess.DEVNULL).decode().strip()
+            if not wid:
+                _win_cache_has = False
+                _win_cache_paste = "ctrl+v"
+            else:
+                _win_cache_has = True
+                wclass = subprocess.check_output(["xprop", "-id", wid, "WM_CLASS"], stderr=subprocess.DEVNULL).decode().lower()
+                if any(t in wclass for t in ["gnome-terminal", "kitty", "alacritty", "wezterm", "xterm", "tilix", "konsole", "terminator", "xfce4-terminal"]):
+                    _win_cache_paste = "ctrl+shift+v"
+                else:
+                    _win_cache_paste = "ctrl+v"
+        except Exception:
             _win_cache_has = False
             _win_cache_paste = "ctrl+v"
-            return False, "ctrl+v"
-        _win_cache_has = True
-        wclass = subprocess.check_output(["xprop", "-id", wid, "WM_CLASS"], stderr=subprocess.DEVNULL).decode().lower()
-        if any(t in wclass for t in ["gnome-terminal", "kitty", "alacritty", "wezterm", "xterm", "tilix", "konsole", "terminator", "xfce4-terminal"]):
-            _win_cache_paste = "ctrl+shift+v"
-        else:
-            _win_cache_paste = "ctrl+v"
-    except Exception:
-        _win_cache_has = False
-        _win_cache_paste = "ctrl+v"
+        time.sleep(1.2)
+
+def get_window_paste_info():
     return _win_cache_has, _win_cache_paste
 
 def execute_req(req, done_ev):
@@ -3255,32 +3254,32 @@ def execute_req(req, done_ev):
 
         if mb != 0:
             tap_x11_key("Left" if mb < 0 else "Right", abs(mb))
-            pump_gtk(0.010)
+            pump_gtk(0.004)
 
         if bksp > 0:
             tap_x11_key("BackSpace", bksp)
             if raw_txt != "" or ma != 0:
-                pump_gtk(0.016)
+                pump_gtk(0.005)
 
         if raw_txt == "\n":
             tap_x11_key("Return", 1)
-            pump_gtk(0.012)
+            pump_gtk(0.005)
         elif raw_txt != "":
             txt = unicodedata.normalize("NFC", raw_txt)
             has_win, paste_key = get_window_paste_info()
             if not has_win:
-                subprocess.run(["xdotool", "type", "--clearmodifiers", "--delay", "8", "--", txt], stderr=subprocess.DEVNULL)
-                pump_gtk(0.025)
+                subprocess.run(["xdotool", "type", "--clearmodifiers", "--delay", "4", "--", txt], stderr=subprocess.DEVNULL)
+                pump_gtk(0.012)
             else:
                 cb.set_text(txt, -1)
                 cb_pri.set_text(txt, -1)
-                pump_gtk(0.010 if is_direct else 0.014)
-                subprocess.run(["xdotool", "key", "--clearmodifiers", paste_key], stderr=subprocess.DEVNULL)
-                pump_gtk(0.032 if is_direct else 0.085)
+                pump_gtk(0.003 if is_direct else 0.008)
+                trigger_x11_paste_combo(paste_key)
+                pump_gtk(0.008 if is_direct else 0.025)
 
         if ma != 0:
             tap_x11_key("Left" if ma < 0 else "Right", abs(ma))
-            pump_gtk(0.010)
+            pump_gtk(0.004)
     except Exception:
         pass
     finally:
@@ -3312,6 +3311,8 @@ def stdin_loop():
         ev.wait()
     GLib.idle_add(Gtk.main_quit)
 
+tw = threading.Thread(target=_win_watcher_loop, daemon=True)
+tw.start()
 t = threading.Thread(target=stdin_loop, daemon=True)
 t.start()
 Gtk.main()
@@ -5671,6 +5672,90 @@ const htmlPage = `<!DOCTYPE html>
     flex: 1.65; background: #2563eb; border-color: #3b82f6; color: #fff; font-size: 12px; font-weight: 700;
   }
 
+  /* Khung Nhập Giọng Nói & Xem/Sửa Chữ To Rõ Trước Khi Gửi (#voice-review-panel) */
+  .voice-review-panel {
+    position: absolute; top: 38px; left: 50%; transform: translateX(-50%);
+    width: min(94%, 540px); z-index: 65;
+    background: rgba(11, 17, 30, 0.96); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    border: 1.5px solid rgba(52, 211, 153, 0.75); border-radius: 14px;
+    padding: 8px 10px 9px; box-sizing: border-box;
+    box-shadow: 0 12px 34px rgba(0, 0, 0, 0.85);
+    display: none; flex-direction: column; gap: 6px;
+    touch-action: manipulation;
+  }
+  .voice-review-panel.show {
+    display: flex;
+  }
+  .voice-review-panel.floating-pos {
+    transform: none;
+  }
+  .voice-review-header {
+    display: flex; align-items: center; justify-content: space-between; gap: 6px;
+    padding: 2px 4px; border-radius: 7px;
+    background: rgba(30, 41, 59, 0.72); border: 1px solid rgba(148, 163, 184, 0.25);
+  }
+  .voice-review-title {
+    font-size: 11.5px; font-weight: 800; color: #6ee7b7;
+    display: flex; align-items: center; gap: 5px; cursor: grab;
+    flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .voice-review-hdr-btns {
+    display: flex; align-items: center; gap: 5px; flex-shrink: 0;
+  }
+  .voice-review-mode-btn {
+    background: rgba(37, 99, 235, 0.32); border: 1px solid rgba(96, 165, 250, 0.7);
+    color: #dbeafe; border-radius: 999px; padding: 3px 9px;
+    font-size: 10.5px; font-weight: 700; cursor: pointer; line-height: 1.2;
+  }
+  .voice-review-mode-btn:active { background: #2563eb; color: #fff; }
+  .voice-review-close-btn {
+    background: rgba(239, 68, 68, 0.22); border: 1px solid rgba(248, 113, 113, 0.55);
+    color: #fecaca; border-radius: 999px; width: 22px; height: 22px;
+    font-size: 12px; font-weight: 800; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center; padding: 0;
+  }
+  .voice-review-textarea {
+    width: 100%; height: auto; box-sizing: border-box;
+    field-sizing: content; min-block-size: 2.4lh; max-block-size: 5lh;
+    font-size: 20px; font-weight: 600; line-height: 1.42;
+    color: #ffffff; background: #070b14;
+    border: 1.5px solid #38bdf8; border-radius: 10px;
+    padding: 8px 11px; margin: 0; outline: none; resize: none;
+    font-family: inherit; box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.7);
+    -webkit-user-select: text; user-select: text;
+  }
+  .voice-review-textarea:focus {
+    border-color: #34d399;
+    box-shadow: 0 0 0 2px rgba(52, 211, 153, 0.28), inset 0 2px 6px rgba(0, 0, 0, 0.7);
+  }
+  .voice-review-textarea::placeholder {
+    color: #94a3b8; font-size: 14.5px; font-weight: 500;
+  }
+  .voice-review-actions {
+    display: flex; align-items: center; justify-content: space-between; gap: 6px;
+  }
+  .voice-review-btn {
+    height: 34px; border-radius: 9px; font-size: 12.5px; font-weight: 800;
+    cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+    gap: 5px; padding: 0 10px; border: 1px solid #334155;
+    background: #1e293b; color: #e2e8f0; transition: all 0.1s;
+    user-select: none; -webkit-user-select: none; touch-action: manipulation;
+  }
+  .voice-review-btn:active { transform: scale(0.95); }
+  .voice-review-btn.btn-clear {
+    color: #fca5a5; border-color: rgba(248, 113, 113, 0.45); background: rgba(127, 29, 29, 0.35);
+  }
+  .voice-review-btn.btn-send {
+    flex: 1.3; background: linear-gradient(135deg, #059669, #047857);
+    border-color: #34d399; color: #ffffff; font-size: 13px;
+    box-shadow: 0 3px 12px rgba(5, 150, 105, 0.45);
+  }
+  .voice-review-btn.btn-send-enter {
+    flex: 1.45; background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    border-color: #60a5fa; color: #ffffff; font-size: 13px;
+    box-shadow: 0 3px 12px rgba(37, 99, 235, 0.5);
+  }
+
   .tool-btn {
     flex: 1; height: 33px; background: #1a2030; border: 1px solid #2b354c; border-radius: 8px;
     color: #cbd5e1; font-size: 11px; font-weight: 700; cursor: pointer;
@@ -5767,6 +5852,24 @@ const htmlPage = `<!DOCTYPE html>
           <!-- Bàn phím cảm ứng Ngang tích hợp (Xuất hiện đúng chiều ngang màn hình khi bấm nút ⌨️ Bàn phím) -->
           <div class="vui-landscape-kbd" id="vui-landscape-kbd"></div>
 
+          <!-- Ô Nhập Giọng Nói & Xem/Sửa Chữ To Rõ Trước Khi Gửi (Khi khung này hiện lên, mọi chỉnh sửa từ bàn phím on-screen đều sửa tại đây, không gửi thẳng tới máy đích cho tới khi bấm Gửi) -->
+          <div class="voice-review-panel" id="voice-review-panel">
+            <div class="voice-review-header drag-handle" id="voice-review-drag-handle" tabindex="0" aria-label="Giữ kéo hoặc dùng phím mũi tên để di chuyển ô xem và sửa văn bản">
+              <label for="voice-review-textarea" class="voice-review-title" id="voice-review-title">✥ 🎙️ Giọng nói / Xem &amp; sửa chữ to rõ trước khi gửi</label>
+              <div class="voice-review-hdr-btns">
+                <button type="button" class="voice-review-mode-btn" id="btn-review-kbd-mode" onmousedown="event.preventDefault()" onclick="toggleVoiceReviewKbdMode()" title="Đổi giữa Bàn phím ảo VuiRemote (Telex ngang) và Bàn phím gốc Điện thoại (có nút Mic 🎙️)">⌨️ Sửa bằng Phím ảo</button>
+                <button type="button" class="voice-review-close-btn" id="btn-review-close" onclick="closeVoiceReviewPanel()" title="Đóng ô xem lại">&times;</button>
+              </div>
+            </div>
+            <textarea id="voice-review-textarea" class="voice-review-textarea" rows="2" placeholder="Bấm 🎙️ trên bàn phím ĐT để nói, chạm vào chữ bất kỳ để sửa lỗi nhận dạng rồi bấm Gửi..." onfocus="onVoiceReviewFocus(event)" oninput="onVoiceReviewInput(event)" onkeydown="onVoiceReviewKeyDown(event)" onclick="saveVoiceReviewSelection()" onkeyup="saveVoiceReviewSelection()" ontouchend="saveVoiceReviewSelection()" onselect="saveVoiceReviewSelection()"></textarea>
+            <div class="voice-review-actions">
+              <button type="button" class="voice-review-btn btn-clear" id="btn-review-clear" onmousedown="event.preventDefault()" onclick="clearVoiceReviewText()" title="Xóa toàn bộ nội dung trong ô này để đọc/nhập lại">🗑️ Xóa</button>
+              <button type="button" class="voice-review-btn" id="btn-review-bksp" onmousedown="event.preventDefault()" onclick="onVkbdAction('BKSP', true)" title="Xóa 1 ký tự tại vị trí con trỏ trong ô xem lại">⌫ Lùi</button>
+              <button type="button" class="voice-review-btn btn-send" id="btn-review-send" onclick="submitVoiceReview(false)" title="Gửi toàn bộ nội dung đã chỉnh sửa sang máy đích">🚀 Gửi chữ</button>
+              <button type="button" class="voice-review-btn btn-send-enter" id="btn-review-send-enter" onclick="submitVoiceReview(true)" title="Gửi nội dung đã chỉnh sửa kèm phím Enter ↵">🚀 Gửi + Enter ↵</button>
+            </div>
+          </div>
+
           <!-- Watermark Pill Góc Trái Trên: Chọn thiết bị & Công cụ nhanh (Kéo di chuyển tự do & Thu gọn 1 chạm để không bao giờ che Title Bar cửa sổ) -->
           <div class="wm-top-bar" id="wm-top-bar">
             <span class="wm-bar-grip drag-handle" id="wm-top-drag-handle" tabindex="0" aria-label="Giữ kéo hoặc dùng phím mũi tên để di chuyển thanh công cụ" title="Giữ và kéo để di chuyển thanh công cụ tới vị trí bất kỳ (Nhấp đúp để về góc mặc định)">✥</span>
@@ -5782,8 +5885,11 @@ const htmlPage = `<!DOCTYPE html>
             <button class="screen-dev-picker-btn" id="btn-pc-win-picker" style="display:none; background:rgba(59,130,246,0.25); border-color:rgba(96,165,250,0.55); color:#bfdbfe; padding:0 8px; font-size:10.5px;" onclick="openWindowModal()" title="Làm việc riêng với từng cửa sổ chương trình (Antigravity, Chrome, Terminal...) hoặc Toàn màn hình">
               <span id="pc-win-picker-label">🪟 Cửa sổ</span>
             </button>
-            <button class="screen-dev-picker-btn" id="btn-top-kbd" style="background:rgba(37,99,235,0.34); border-color:rgba(96,165,250,0.7); color:#dbeafe; padding:0 10px; font-size:11px;" onclick="toggleQuickInputBar()" title="Bật / Tắt bàn phím ảo trên màn hình (Bàn phím vật lý luôn gõ trực tiếp không cần hiện ô nhập)">
+            <button class="screen-dev-picker-btn" id="btn-top-kbd" style="background:rgba(37,99,235,0.34); border-color:rgba(96,165,250,0.7); color:#dbeafe; padding:0 10px; font-size:11px;" onclick="toggleQuickInputBar()" title="Bật / Tắt bàn phím ảo trên màn hình (Gõ từ đầu sẽ gửi trực tiếp; khi đang mở ô Giọng nói sẽ dùng để sửa chữ trong ô)">
               <span id="top-kbd-label">⌨️ Bàn phím</span>
+            </button>
+            <button class="screen-dev-picker-btn" id="btn-top-voice" style="background:rgba(5,150,105,0.34); border-color:rgba(52,211,153,0.75); color:#d1fae5; padding:0 10px; font-size:11px;" onclick="toggleVoiceReviewPanel()" title="Nhập giọng nói &amp; Xem/sửa chữ to rõ trước khi gửi sang máy đích">
+              <span id="top-voice-label">🎙️ Giọng nói</span>
             </button>
             <label for="vui-img-upload" class="screen-dev-picker-btn" id="btn-top-attach" style="background:rgba(15,118,110,0.34); border-color:rgba(20,184,166,0.7); color:#ccfbf1; padding:0 8px; font-size:10.5px; cursor:pointer;" onclick="recordActivity()" title="Gửi trực tiếp File (Hình ảnh, Video, Âm thanh, Tài liệu) sang máy được điều khiển">
               <span id="top-attach-label">📎 Tệp</span>
@@ -6770,7 +6876,11 @@ function getEffectiveRotation() {
   var Ww = window.innerWidth || document.documentElement.clientWidth || 360;
   var Wh = window.innerHeight || document.documentElement.clientHeight || 640;
   var inp = document.getElementById('quick-txt-input');
-  var kbdOpen = (isMobileTouchOS() && forceNativePhoneKbd && inp && document.activeElement === inp);
+  var revTa = document.getElementById('voice-review-textarea');
+  var kbdOpen = isMobileTouchOS() && (
+    (forceNativePhoneKbd && inp && document.activeElement === inp) ||
+    (revTa && document.activeElement === revTa)
+  );
   if (!kbdOpen) {
     lastKnownOSLandscape = (Ww > Wh * 1.08);
   }
@@ -7046,7 +7156,8 @@ function enqueueDirectTextDelta(bksp, text, isRepeat) {
     text: text,
     repeat: !!isRepeat
   });
-  if (isRepeat) {
+  // Gửi tức thì (0ms delay) cho ký tự đầu tiên khi đường truyền đang rảnh; nếu có xóa lùi (Unikey/IBus tách sự kiện bksp + bù chữ dấu) hoặc đang có gói tin bay, gom siêu tốc trong 3ms
+  if (isRepeat || (bksp === 0 && text !== '' && directInFlightCount === 0 && !deltaCoalesceTimer)) {
     pumpDirectInputQueue(true);
   } else {
     scheduleDeltaPump();
@@ -7058,7 +7169,7 @@ function scheduleDeltaPump() {
   deltaCoalesceTimer = setTimeout(function() {
     deltaCoalesceTimer = null;
     pumpDirectInputQueue(true);
-  }, 14);
+  }, 3);
 }
 
 function enqueueDirectKey(code, label, isRepeat) {
@@ -7123,6 +7234,8 @@ function dispatchDirectInputItem(item) {
       directQueueBusy = (directInFlightCount >= MAX_CONCURRENT_DIRECT_XHRS);
       if (directInputQueue.length > 0) {
         pumpDirectInputQueue(true);
+      } else if (directInFlightCount === 0) {
+        triggerInteractiveCapture();
       }
     };
     xhrRef._done = doneFn;
@@ -7446,22 +7559,330 @@ function clearVkbdBkspRepeat() {
   }
 }
 
+var voiceReviewUseNativeKbd = true;
+var voiceReviewLastSelStart = 0;
+var voiceReviewLastSelEnd = 0;
+
+function isVoiceReviewOpen() {
+  var panel = document.getElementById('voice-review-panel');
+  return !!(panel && panel.classList.contains('show'));
+}
+
+function saveVoiceReviewSelection() {
+  var ta = document.getElementById('voice-review-textarea');
+  if (!ta) return;
+  if (typeof ta.selectionStart === 'number') {
+    voiceReviewLastSelStart = ta.selectionStart;
+    voiceReviewLastSelEnd = (typeof ta.selectionEnd === 'number') ? ta.selectionEnd : ta.selectionStart;
+  }
+}
+
+function getVoiceReviewSelection(ta) {
+  var len = (ta && ta.value) ? ta.value.length : 0;
+  var s = (ta && document.activeElement === ta && typeof ta.selectionStart === 'number')
+    ? ta.selectionStart
+    : voiceReviewLastSelStart;
+  var e = (ta && document.activeElement === ta && typeof ta.selectionEnd === 'number')
+    ? ta.selectionEnd
+    : voiceReviewLastSelEnd;
+  if (typeof s !== 'number' || isNaN(s) || s < 0) s = len;
+  if (typeof e !== 'number' || isNaN(e) || e < s) e = s;
+  if (s > len) s = len;
+  if (e > len) e = len;
+  return { start: s, end: e };
+}
+
+function updateVoiceReviewModeUI() {
+  var modeBtn = document.getElementById('btn-review-kbd-mode');
+  var topVoiceBtn = document.getElementById('btn-top-voice');
+  var topVoiceLbl = document.getElementById('top-voice-label');
+  var kbd = document.getElementById('vui-landscape-kbd');
+  var isVkbdShown = !!(kbd && kbd.classList.contains('show'));
+  var open = isVoiceReviewOpen();
+  var en = isEN();
+  if (modeBtn) {
+    if (isVkbdShown) {
+      modeBtn.innerText = en ? '🎙️ Phone Mic / Kbd' : '🎙️ Bàn phím & Mic ĐT';
+      modeBtn.style.background = 'rgba(5, 150, 105, 0.36)';
+      modeBtn.style.borderColor = 'rgba(52, 211, 153, 0.8)';
+    } else {
+      modeBtn.innerText = en ? '⌨️ Edit w/ Virtual Kbd' : '⌨️ Sửa bằng Phím ảo';
+      modeBtn.style.background = 'rgba(37, 99, 235, 0.34)';
+      modeBtn.style.borderColor = 'rgba(96, 165, 250, 0.75)';
+    }
+  }
+  if (topVoiceBtn) {
+    if (open) {
+      if (topVoiceLbl) topVoiceLbl.innerText = en ? '🎙️ Close Review' : '🎙️ Đóng ô nói';
+      topVoiceBtn.style.background = 'rgba(16, 185, 129, 0.45)';
+      topVoiceBtn.style.borderColor = '#34d399';
+    } else {
+      if (topVoiceLbl) topVoiceLbl.innerText = en ? '🎙️ Voice / Review' : '🎙️ Giọng nói';
+      topVoiceBtn.style.background = 'rgba(5, 150, 105, 0.34)';
+      topVoiceBtn.style.borderColor = 'rgba(52, 211, 153, 0.75)';
+    }
+  }
+}
+
+function openVoiceReviewPanel(initialText, preferNativeMic) {
+  recordActivity();
+  var panel = document.getElementById('voice-review-panel');
+  var ta = document.getElementById('voice-review-textarea');
+  if (!panel || !ta) return;
+
+  resetDirectBuffer();
+  panel.classList.add('show');
+
+  if (typeof initialText === 'string' && initialText.length > 0) {
+    if (ta.value && ta.value.trim().length > 0) {
+      var sep = /\s$/.test(ta.value) ? '' : ' ';
+      ta.value = ta.value + sep + initialText;
+    } else {
+      ta.value = initialText;
+    }
+  }
+
+  var len = (ta.value || '').length;
+  voiceReviewLastSelStart = len;
+  voiceReviewLastSelEnd = len;
+
+  voiceReviewUseNativeKbd = (preferNativeMic !== false);
+  if (voiceReviewUseNativeKbd) {
+    hideLandscapeKeyboard();
+    ta.removeAttribute('readonly');
+    ta.setAttribute('inputmode', 'text');
+  } else {
+    ta.removeAttribute('readonly');
+    ta.setAttribute('inputmode', 'none');
+    showLandscapeKeyboard();
+  }
+
+  try { ta.focus({ preventScroll: true }); } catch (e) { try { ta.focus(); } catch (e2) {} }
+  try { ta.setSelectionRange(len, len); } catch (e3) {}
+
+  updateVoiceReviewModeUI();
+  updateClearBtnVisibility();
+  setTimeout(clampNavClusterPosition, 25);
+}
+
+function closeVoiceReviewPanel() {
+  recordActivity();
+  var panel = document.getElementById('voice-review-panel');
+  var ta = document.getElementById('voice-review-textarea');
+  var bar = document.getElementById('smart-input-bar');
+  var btn = document.getElementById('btn-top-kbd');
+  if (panel) panel.classList.remove('show');
+  if (ta) {
+    ta.setAttribute('inputmode', 'none');
+    ta.blur();
+  }
+  hideLandscapeKeyboard();
+  if (bar) bar.classList.remove('show');
+  if (btn) btn.classList.remove('active-btn');
+  forceNativePhoneKbd = false;
+  imeOpenedByUser = false;
+  resetDirectBuffer();
+  updateVoiceReviewModeUI();
+  updateClearBtnVisibility();
+  if (!isMobileTouchOS()) {
+    setTimeout(ensureDesktopImeBridgeFocus, 25);
+  }
+}
+
+function toggleVoiceReviewPanel() {
+  if (isVoiceReviewOpen()) {
+    closeVoiceReviewPanel();
+  } else {
+    openVoiceReviewPanel('', true);
+    flashStatus(isEN()
+      ? '🎙️ Tap Phone Mic to dictate — Review & edit big text before sending!'
+      : '🎙️ Bấm Mic trên bàn phím ĐT để nói — Xem & sửa chữ to rõ rồi bấm Gửi!', true);
+  }
+}
+
+function toggleVoiceReviewKbdMode() {
+  recordActivity();
+  if (!isVoiceReviewOpen()) {
+    openVoiceReviewPanel('', false);
+    return;
+  }
+  var ta = document.getElementById('voice-review-textarea');
+  var kbd = document.getElementById('vui-landscape-kbd');
+  var isVkbdShown = !!(kbd && kbd.classList.contains('show'));
+  saveVoiceReviewSelection();
+  if (isVkbdShown) {
+    voiceReviewUseNativeKbd = true;
+    hideLandscapeKeyboard();
+    if (ta) {
+      ta.removeAttribute('readonly');
+      ta.setAttribute('inputmode', 'text');
+      try { ta.focus({ preventScroll: true }); } catch (e) { try { ta.focus(); } catch (e2) {} }
+      try { ta.setSelectionRange(voiceReviewLastSelStart, voiceReviewLastSelEnd); } catch (e3) {}
+    }
+    flashStatus(isEN() ? '🎙️ Switched to Phone Native Keyboard & Mic' : '🎙️ Đã bật Bàn phím gốc & Mic của điện thoại', true);
+  } else {
+    voiceReviewUseNativeKbd = false;
+    if (ta) {
+      ta.removeAttribute('readonly');
+      ta.setAttribute('inputmode', 'none');
+      try { ta.focus({ preventScroll: true }); } catch (e) { try { ta.focus(); } catch (e2) {} }
+      try { ta.setSelectionRange(voiceReviewLastSelStart, voiceReviewLastSelEnd); } catch (e3) {}
+    }
+    showLandscapeKeyboard();
+    flashStatus(isEN() ? '⌨️ Editing in Review Box with On-Screen Telex Keyboard' : '⌨️ Đang sửa trực tiếp trong ô Xem lại bằng Bàn phím ảo Telex', true);
+  }
+  updateVoiceReviewModeUI();
+  updateClearBtnVisibility();
+}
+
+function onVoiceReviewFocus(ev) {
+  recordActivity();
+  saveVoiceReviewSelection();
+  var ta = document.getElementById('voice-review-textarea');
+  if (!ta) return;
+  if (!voiceReviewUseNativeKbd) {
+    ta.setAttribute('inputmode', 'none');
+    showLandscapeKeyboard();
+  } else {
+    ta.setAttribute('inputmode', 'text');
+  }
+  updateVoiceReviewModeUI();
+}
+
+function onVoiceReviewInput(ev) {
+  recordActivity();
+  saveVoiceReviewSelection();
+}
+
+function onVoiceReviewKeyDown(ev) {
+  recordActivity();
+  // Tuân thủ chuẩn IME-safe Enter submit: kiểm tra ev.isComposing trước khi xử lý phím Enter và gọi ev.preventDefault()
+  if (ev.isComposing || ev.keyCode === 229) return;
+  if (ev.key === 'Escape') {
+    ev.preventDefault();
+    ev.stopPropagation();
+    closeVoiceReviewPanel();
+    return;
+  }
+  if (ev.key === 'Enter' && (ev.ctrlKey || ev.metaKey || (!ev.shiftKey && !isMobileTouchOS()))) {
+    ev.preventDefault();
+    ev.stopPropagation();
+    submitVoiceReview(false);
+    return;
+  }
+  setTimeout(saveVoiceReviewSelection, 0);
+}
+
+function clearVoiceReviewText() {
+  recordActivity();
+  var ta = document.getElementById('voice-review-textarea');
+  if (!ta) return;
+  ta.value = '';
+  voiceReviewLastSelStart = 0;
+  voiceReviewLastSelEnd = 0;
+  try { ta.focus({ preventScroll: true }); } catch (e) { try { ta.focus(); } catch (e2) {} }
+  try { ta.setSelectionRange(0, 0); } catch (e3) {}
+  flashStatus(isEN() ? '🗑️ Cleared review box' : '🗑️ Đã xóa trắng ô xem lại', true);
+}
+
+function submitVoiceReview(withEnter) {
+  recordActivity();
+  if (navigator.vibrate) navigator.vibrate(14);
+  var ta = document.getElementById('voice-review-textarea');
+  var raw = ta ? (ta.value || '') : '';
+  var norm = raw.normalize ? raw.normalize('NFC') : raw;
+  if (!norm && !withEnter) {
+    flashStatus(isEN() ? '⚠️ Review box is empty' : '⚠️ Ô nội dung đang trống', false);
+    return;
+  }
+  if (ta) {
+    ta.value = '';
+    voiceReviewLastSelStart = 0;
+    voiceReviewLastSelEnd = 0;
+  }
+  closeVoiceReviewPanel();
+  if (norm) {
+    enqueueDirectTextDelta(0, norm);
+  }
+  if (withEnter) {
+    enqueueDirectKey(66, 'Enter ↵');
+    flashStatus(isEN() ? '🚀 Sent reviewed text + Enter ↵' : '🚀 Đã gửi nội dung chuẩn xác + Enter ↵', true);
+  } else {
+    flashStatus(isEN() ? '🚀 Sent reviewed text to target device' : '🚀 Đã gửi nội dung chuẩn xác sang máy đích', true);
+  }
+}
+
+function editVoiceReviewWithVkbdChar(ch) {
+  var ta = document.getElementById('voice-review-textarea');
+  if (!ta) return;
+  var val = ta.value || '';
+  var sel = getVoiceReviewSelection(ta);
+  var before = val.slice(0, sel.start);
+  var after = val.slice(sel.end);
+  var normBefore = before.normalize ? before.normalize('NFC') : before;
+  var nextBefore = (sel.start === sel.end) ? applyVietnameseTelex(normBefore, ch) : (normBefore + ch);
+  if (nextBefore.normalize) nextBefore = nextBefore.normalize('NFC');
+  ta.value = nextBefore + after;
+  var newCaret = nextBefore.length;
+  voiceReviewLastSelStart = newCaret;
+  voiceReviewLastSelEnd = newCaret;
+  try { ta.focus({ preventScroll: true }); } catch (e) {}
+  try { ta.setSelectionRange(newCaret, newCaret); } catch (e2) {}
+}
+
+function editVoiceReviewWithVkbdBksp() {
+  var ta = document.getElementById('voice-review-textarea');
+  if (!ta) return;
+  var val = ta.value || '';
+  var sel = getVoiceReviewSelection(ta);
+  var before = val.slice(0, sel.start);
+  var after = val.slice(sel.end);
+  var newBefore = before;
+  if (sel.start === sel.end) {
+    var bChars = Array.from(before.normalize ? before.normalize('NFC') : before);
+    if (bChars.length > 0) bChars.pop();
+    newBefore = bChars.join('');
+  }
+  ta.value = newBefore + after;
+  var newCaret = newBefore.length;
+  voiceReviewLastSelStart = newCaret;
+  voiceReviewLastSelEnd = newCaret;
+  try { ta.focus({ preventScroll: true }); } catch (e) {}
+  try { ta.setSelectionRange(newCaret, newCaret); } catch (e2) {}
+}
+
+function editVoiceReviewWithVkbdEnter() {
+  var ta = document.getElementById('voice-review-textarea');
+  if (!ta) return;
+  var val = ta.value || '';
+  var sel = getVoiceReviewSelection(ta);
+  var nextBefore = val.slice(0, sel.start) + '\n';
+  ta.value = nextBefore + val.slice(sel.end);
+  var newCaret = nextBefore.length;
+  voiceReviewLastSelStart = newCaret;
+  voiceReviewLastSelEnd = newCaret;
+  try { ta.focus({ preventScroll: true }); } catch (e) {}
+  try { ta.setSelectionRange(newCaret, newCaret); } catch (e2) {}
+}
+
 function bindLandscapeKeyboardTouchEvents(kbd) {
   if (!kbd || kbd._touchBound) return;
   kbd._touchBound = true;
+  kbd.addEventListener('mousedown', function(e) {
+    var btn = e.target && e.target.closest ? e.target.closest('.vkbd-key') : null;
+    if (btn && isVoiceReviewOpen()) {
+      e.preventDefault();
+    }
+  });
   kbd.addEventListener('touchstart', function(e) {
     var btn = e.target && e.target.closest ? e.target.closest('.vkbd-key') : null;
     if (!btn) return;
     var act = btn.getAttribute('data-vkbd-act');
     var ch = btn.getAttribute('data-vkbd-char');
     if (act === 'NATIVE') {
-      // Không preventDefault trên nút NATIVE để trình duyệt di động (iOS Safari / Android Chrome) cho phép mở bàn phím gốc
-      var inp = document.getElementById('quick-txt-input');
-      if (inp) {
-        inp.removeAttribute('readonly');
-        inp.setAttribute('inputmode', 'text');
-        try { inp.focus({ preventScroll: true }); } catch(err) { try { inp.focus(); } catch(err2) {} }
-      }
+      // Không preventDefault trên nút NATIVE để trình duyệt di động (iOS Safari / Android Chrome) cho phép mở bàn phím gốc kèm Mic vào thẳng ô Xem & sửa chữ to rõ
+      lastVkbdTouchTime = Date.now();
+      openVoiceReviewPanel('', true);
       return;
     }
     e.preventDefault();
@@ -7528,7 +7949,7 @@ function renderLandscapeKeyboard() {
         var tLabel = remoteIsLocked ? '🔒 MẬT KHẨU' : (vkbdTelex ? '🇻🇳 TELEX' : '🇬🇧 ENG');
         html += '<button type="button" class="vkbd-key vkbd-fn' + tAct + '" data-vkbd-act="TELEX" onclick="onVkbdAction(\'TELEX\')" title="Đổi giữa gõ Tiếng Việt Telex và Tiếng Anh / Mật khẩu">' + tLabel + '</button>';
       } else if (k === 'NATIVE') {
-        html += '<button type="button" class="vkbd-key vkbd-fn" style="flex:1.05;" data-vkbd-act="NATIVE" onclick="onVkbdAction(\'NATIVE\')" title="Mở bàn phím gốc của điện thoại / Giọng nói 🎙️">📱</button>';
+        html += '<button type="button" class="vkbd-key vkbd-fn" style="flex:1.15;" data-vkbd-act="NATIVE" onclick="onVkbdAction(\'NATIVE\')" title="Mở ô Nhập giọng nói &amp; Xem/sửa chữ to rõ trước khi gửi">🎙️/📱</button>';
       } else if (k === 'SPACE') {
         html += '<button type="button" class="vkbd-key vkbd-space" data-vkbd-char=" " onclick="onVkbdChar(\' \')">Dấu cách</button>';
       } else if (k === 'ENTER') {
@@ -7553,6 +7974,15 @@ function onVkbdChar(ch, fromTouch) {
   if (!fromTouch && (Date.now() - lastVkbdTouchTime < 450)) return;
   recordActivity();
   if (navigator.vibrate) navigator.vibrate(8);
+  // Khi đang mở ô Xem & sửa chữ giọng nói (#voice-review-panel), mọi phím bấm trên bàn phím on-screen đều chỉnh sửa trực tiếp tại vị trí con trỏ của #voice-review-textarea chứ KHÔNG gửi thẳng tới máy đích
+  if (isVoiceReviewOpen()) {
+    editVoiceReviewWithVkbdChar(ch);
+    if (vkbdShift) {
+      vkbdShift = false;
+      renderLandscapeKeyboard();
+    }
+    return;
+  }
   var inp = document.getElementById('quick-txt-input');
   var rawVal = inp ? (inp.value || '').replace(/\u200B/g, '') : directSentText;
   var before = rawVal.normalize ? rawVal.normalize('NFC') : rawVal;
@@ -7595,15 +8025,18 @@ function onVkbdAction(act, fromTouch, isRepeat) {
     resetDirectBuffer();
     flashStatus(vkbdTelex ? '🇻🇳 Đã bật gõ Tiếng Việt Telex' : '🇬🇧 Đã chuyển sang gõ Tiếng Anh / Mật khẩu', true);
   } else if (act === 'NATIVE') {
-    forceNativePhoneKbd = true;
-    if (inp) {
-      inp.removeAttribute('readonly');
-      inp.setAttribute('inputmode', 'text');
-      try { inp.focus({ preventScroll: true }); } catch(e) { try { inp.focus(); } catch(e2) {} }
+    openVoiceReviewPanel('', true);
+    flashStatus(isEN()
+      ? '🎙️ Opened Voice & Big-Text Review Box'
+      : '🎙️ Đã mở ô Nhập giọng nói & Xem/sửa chữ to rõ trước khi gửi', true);
+  } else if (isVoiceReviewOpen() && act === 'BKSP') {
+    editVoiceReviewWithVkbdBksp();
+  } else if (isVoiceReviewOpen() && act === 'ENTER') {
+    if (vkbdShift) {
+      vkbdShift = false;
+      renderLandscapeKeyboard();
     }
-    hideLandscapeKeyboard();
-    resetDirectBuffer();
-    flashStatus('📱 Đã bật bàn phím gốc của thiết bị (Ô nhập ẩn)', true);
+    editVoiceReviewWithVkbdEnter();
   } else if (act === 'BKSP') {
     var rawB = inp ? (inp.value || '').replace(/\u200B/g, '') : '';
     var charsB = Array.from(rawB.normalize ? rawB.normalize('NFC') : rawB);
@@ -7638,6 +8071,7 @@ function showLandscapeKeyboard() {
   if (!kbd) return;
   renderLandscapeKeyboard();
   kbd.classList.add('show');
+  updateVoiceReviewModeUI();
   setTimeout(clampNavClusterPosition, 20);
   positionSmartInputBar();
 }
@@ -7645,6 +8079,7 @@ function showLandscapeKeyboard() {
 function hideLandscapeKeyboard() {
   var kbd = document.getElementById('vui-landscape-kbd');
   if (kbd) kbd.classList.remove('show');
+  updateVoiceReviewModeUI();
   if (zoomLevel <= 1.05) {
     panX = 0;
     panY = 0;
@@ -7682,6 +8117,20 @@ function activateSmartKeyboardForOrientation() {
 }
 
 function toggleQuickInputBar(forceState, fromIME, closedByUser) {
+  if (isVoiceReviewOpen()) {
+    if (closedByUser && forceState === false) {
+      hideLandscapeKeyboard();
+      voiceReviewUseNativeKbd = true;
+      updateVoiceReviewModeUI();
+      updateClearBtnVisibility();
+      return;
+    }
+    if (typeof forceState !== 'boolean') {
+      toggleVoiceReviewKbdMode();
+      return;
+    }
+  }
+
   var bar = document.getElementById('smart-input-bar');
   var btn = document.getElementById('btn-top-kbd');
   var inp = document.getElementById('quick-txt-input');
@@ -7859,7 +8308,8 @@ function clampNavClusterPosition() {
     'screen-watermark-source',
     'screen-watermark-rotate',
     'screen-watermark-zoom',
-    'vui-landscape-kbd'
+    'vui-landscape-kbd',
+    'voice-review-panel'
   ];
   for (var i = 0; i < ids.length; i++) {
     clampSingleFloatingElement(document.getElementById(ids[i]), vp);
@@ -8105,6 +8555,12 @@ function initNavClusterDrag() {
     ignoreSelector: '.vkbd-dock-btn',
     floatingClass: 'floating-pos',
     resetGripSelector: '#vkbd-drag-handle'
+  });
+  bindFloatingDraggable(document.getElementById('voice-review-panel'), 'vui_wm_voice_review_pos_v1', {
+    handleSelector: '#voice-review-drag-handle',
+    ignoreSelector: 'button',
+    floatingClass: 'floating-pos',
+    resetGripSelector: '#voice-review-drag-handle'
   });
 }
 
@@ -9325,6 +9781,7 @@ var lastRealTouchTime = 0;
 
 function ensureDesktopImeBridgeFocus() {
   if (isMobileTouchOS() || isSleeping) return;
+  if (typeof isVoiceReviewOpen === 'function' && isVoiceReviewOpen()) return;
   if (isBlockingModalOrInputActive(document.activeElement)) return;
   var inp = document.getElementById('quick-txt-input');
   if (!inp) return;
@@ -9449,7 +9906,7 @@ function bindGestures() {
     }
   }, { passive: false });
 
-  var overlays = ['screen-offline-notice', 'screen-watermark-zoom', 'screen-watermark-rotate', 'smart-input-bar', 'vui-landscape-kbd', 'wm-top-bar', 'screen-watermark-source', 'screen-sleep-overlay'];
+  var overlays = ['screen-offline-notice', 'screen-watermark-zoom', 'screen-watermark-rotate', 'smart-input-bar', 'vui-landscape-kbd', 'voice-review-panel', 'wm-top-bar', 'screen-watermark-source', 'screen-sleep-overlay'];
   overlays.forEach(function(id) {
     var el = document.getElementById(id);
     if (el) {
@@ -9509,6 +9966,7 @@ function flashStatus(text, ok) {
 }
 
 function isBlockingModalOrInputActive(targetEl) {
+  if (typeof isVoiceReviewOpen === 'function' && isVoiceReviewOpen()) return true;
   var inp = document.getElementById('quick-txt-input');
   if (targetEl && targetEl !== inp) {
     var tag = (targetEl.tagName || '').toUpperCase();
@@ -9803,7 +10261,11 @@ function onQuickInputChanged() {
   // Khi người dùng bấm Backspace trên bàn phím ảo hệ thống lúc bộ đệm từ đang rỗng (xóa mất ký tự sentinel \u200B)
   if (!hadSentinel && cleanVal.length === 0 && directSentText.length === 0) {
     resetDirectBuffer();
-    enqueueDirectTextDelta(1, '');
+    if (isVoiceReviewOpen()) {
+      editVoiceReviewWithVkbdBksp();
+    } else {
+      enqueueDirectTextDelta(1, '');
+    }
     return;
   }
 
@@ -9825,6 +10287,27 @@ function onQuickInputChanged() {
   }
   var bkspCount = oldChars.length - p;
   var appendStr = newChars.slice(p).join('');
+
+  // Nếu ô Xem & sửa chữ giọng nói (#voice-review-panel) đang mở, chuyển toàn bộ nội dung nhập vào ô này chứ không gửi thẳng tới máy đích
+  if (isVoiceReviewOpen()) {
+    if (appendStr.length > 0) {
+      openVoiceReviewPanel(appendStr, voiceReviewUseNativeKbd);
+    }
+    resetDirectBuffer();
+    return;
+  }
+
+  // Phát hiện tự động khi người dùng dùng Mic của bàn phím trên điện thoại (nhận dạng giọng nói chèn cả cụm từ / từ dài >= 4 ký tự cùng lúc):
+  // Đưa ngay vào ô Textarea chữ to rõ (#voice-review-panel) để xem và chỉnh sửa thủ công trước khi gửi!
+  var appendChars = Array.from(appendStr);
+  if (isMobileTouchOS() && ((appendStr.trim().indexOf(' ') !== -1 && appendChars.length >= 3) || appendChars.length >= 4)) {
+    resetDirectBuffer();
+    openVoiceReviewPanel(normNew, true);
+    flashStatus(isEN()
+      ? '🎙️ Voice dictation captured in Review Box — Edit & tap Send!'
+      : '🎙️ Đã đưa chữ giọng nói vào ô Xem & sửa chữ to rõ trước khi gửi!', true);
+    return;
+  }
 
   directSentText = normNew;
 
@@ -9874,11 +10357,11 @@ function updateClearBtnVisibility() {
   if (topBtn) {
     var isBarOpen = (bar && bar.classList.contains('show')) || (kbd && kbd.classList.contains('show'));
     if (isBarOpen) {
-      topBtn.innerHTML = '⌨️ Đóng phím';
+      topBtn.innerHTML = '<span id="top-kbd-label">' + (isEN() ? '⌨️ Close Kbd' : '⌨️ Đóng phím') + '</span>';
       topBtn.style.borderColor = 'rgba(52, 211, 153, 0.85)';
       topBtn.style.background = 'rgba(16, 185, 129, 0.32)';
     } else {
-      topBtn.innerHTML = '⌨️ Bàn phím';
+      topBtn.innerHTML = '<span id="top-kbd-label">' + (isEN() ? '⌨️ Keyboard' : '⌨️ Bàn phím') + '</span>';
       topBtn.style.borderColor = 'rgba(96, 165, 250, 0.7)';
       topBtn.style.background = 'rgba(37, 99, 235, 0.34)';
     }
@@ -10716,8 +11199,10 @@ function triggerTVVoiceAssistant() {
 
 function handleVoiceAction() {
   recordActivity();
-  toggleQuickInputBar(true);
-  flashStatus('🎙️ Bấm nút Micro trên bàn phím điện thoại để nói tiếng Việt', true);
+  openVoiceReviewPanel('', true);
+  flashStatus(isEN()
+    ? '🎙️ Tap Phone Mic to dictate — Review & edit big text before sending!'
+    : '🎙️ Bấm Mic trên bàn phím ĐT để nói — Xem & sửa chữ to rõ rồi bấm Gửi!', true);
 }
 
 var imeCheckInFlight = false;
@@ -10802,8 +11287,31 @@ function applyUILanguage() {
   var kbdBtn = document.getElementById('btn-top-kbd');
   if (kbdLbl) kbdLbl.innerText = en ? '⌨️ Keyboard' : '⌨️ Bàn phím';
   if (kbdBtn) kbdBtn.title = en
-    ? 'Toggle On-Screen Keyboard (Physical keyboard always types directly with zero overlay)'
-    : 'Bật / Tắt bàn phím ảo trên màn hình (Bàn phím vật lý luôn gõ trực tiếp không cần hiện ô nhập)';
+    ? 'Toggle On-Screen Keyboard (Direct typing from scratch; or edits inside Voice Review Box when open)'
+    : 'Bật / Tắt bàn phím ảo trên màn hình (Gõ từ đầu sẽ gửi trực tiếp; khi đang mở ô Giọng nói sẽ dùng để sửa chữ trong ô)';
+
+  var voiceBtn = document.getElementById('btn-top-voice');
+  if (voiceBtn) voiceBtn.title = en
+    ? 'Voice Input & Big-Text Review Box (Review and edit voice dictation before sending to target device)'
+    : 'Nhập giọng nói & Xem/sửa chữ to rõ trước khi gửi sang máy đích';
+
+  var revTitle = document.getElementById('voice-review-title');
+  if (revTitle) revTitle.innerText = en
+    ? '✥ 🎙️ Voice Dictation / Review & Edit Big Text'
+    : '✥ 🎙️ Giọng nói / Xem & sửa chữ to rõ trước khi gửi';
+  var revTa = document.getElementById('voice-review-textarea');
+  if (revTa) revTa.placeholder = en
+    ? 'Tap 🎙️ on your phone keyboard to speak, tap any word here to fix errors, then tap Send...'
+    : 'Bấm 🎙️ trên bàn phím ĐT để nói, chạm vào chữ bất kỳ để sửa lỗi nhận dạng rồi bấm Gửi...';
+  var revClear = document.getElementById('btn-review-clear');
+  if (revClear) revClear.innerText = en ? '🗑️ Clear' : '🗑️ Xóa';
+  var revBksp = document.getElementById('btn-review-bksp');
+  if (revBksp) revBksp.innerText = en ? '⌫ Bksp' : '⌫ Lùi';
+  var revSend = document.getElementById('btn-review-send');
+  if (revSend) revSend.innerText = en ? '🚀 Send Text' : '🚀 Gửi chữ';
+  var revSendEnter = document.getElementById('btn-review-send-enter');
+  if (revSendEnter) revSendEnter.innerText = en ? '🚀 Send + Enter ↵' : '🚀 Gửi + Enter ↵';
+  updateVoiceReviewModeUI();
 
   var attLbl = document.getElementById('top-attach-label');
   var attBtn = document.getElementById('btn-top-attach');
@@ -11445,13 +11953,22 @@ func main() {
 					applyRemoteSimKey(code)
 				}
 				if !isAndroid() {
-					invalidateScreenCache()
 					cCopy := code
 					cntCopy := count
 					repCopy := isRep
+					done := make(chan struct{}, 1)
 					enqueueSequencedPCInput(seq, func() {
 						sendLinuxPCKeyCount(cCopy, cntCopy, repCopy)
+						invalidateScreenCache()
+						select {
+						case done <- struct{}{}:
+						default:
+						}
 					})
+					select {
+					case <-done:
+					case <-time.After(400 * time.Millisecond):
+					}
 				} else {
 					go func(c, cnt, h int) {
 						for i := 0; i < cnt; i++ {
@@ -11850,11 +12367,20 @@ func main() {
 			seq, _ := strconv.ParseInt(r.URL.Query().Get("seq"), 10, 64)
 			if combo != "" {
 				if !isAndroid() {
-					invalidateScreenCache()
 					cCopy := combo
+					done := make(chan struct{}, 1)
 					enqueueSequencedPCInput(seq, func() {
 						sendLinuxPCHotkey(cCopy)
+						invalidateScreenCache()
+						select {
+						case done <- struct{}{}:
+						default:
+						}
 					})
+					select {
+					case <-done:
+					case <-time.After(400 * time.Millisecond):
+					}
 				} else {
 					go func(c string) {
 						sendUinputHotkeyCombo(c)
@@ -12005,11 +12531,11 @@ func main() {
 				applyRemoteSimStep(st.MB, st.Bksp, st.Text, stepMA)
 			}
 			if !isAndroid() {
-				invalidateScreenCache()
 				opList := make([]textDiffStep, len(steps))
 				copy(opList, steps)
 				finalMA := ma
 				isDir := direct
+				done := make(chan struct{}, 1)
 				enqueueSequencedPCInput(seq, func() {
 					for idx, st := range opList {
 						stepMA := 0
@@ -12018,9 +12544,22 @@ func main() {
 						}
 						sendLinuxPCTextDelta(st.Text, st.Bksp, st.MB, stepMA, isDir)
 					}
+					invalidateScreenCache()
+					select {
+					case done <- struct{}{}:
+					default:
+					}
 				})
+				select {
+				case <-done:
+				case <-time.After(1500 * time.Millisecond):
+				}
 			} else {
-				go func(opList []textDiffStep, finalMA int) {
+				opList := make([]textDiffStep, len(steps))
+				copy(opList, steps)
+				finalMA := ma
+				done := make(chan struct{}, 1)
+				enqueueSequencedPCInput(seq, func() {
 					for idx, st := range opList {
 						stepMA := 0
 						if idx == len(opList)-1 {
@@ -12064,7 +12603,15 @@ func main() {
 						}
 					}
 					invalidateScreenCache()
-				}(steps, ma)
+					select {
+					case done <- struct{}{}:
+					default:
+					}
+				})
+				select {
+				case <-done:
+				case <-time.After(1200 * time.Millisecond):
+				}
 			}
 		}
 		w.Write([]byte("OK"))
