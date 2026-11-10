@@ -113,17 +113,23 @@ func getPinFilePaths() []string {
 }
 
 func generateRandomPin() string {
-	for i := 0; i < 10; i++ {
-		var b [2]byte
+	trivial := map[string]bool{
+		"000000": true, "111111": true, "222222": true, "333333": true,
+		"444444": true, "555555": true, "666666": true, "777777": true,
+		"888888": true, "999999": true, "123456": true, "654321": true,
+		"8888": true, "1234": true, "0000": true,
+	}
+	for i := 0; i < 16; i++ {
+		var b [4]byte
 		if _, err := rand.Read(b[:]); err == nil {
-			num := (uint32(b[0])<<8 | uint32(b[1])) % 9000
-			pin := fmt.Sprintf("%04d", 1000+num)
-			if pin != "1111" && pin != "2222" && pin != "8888" && pin != "1234" && pin != "0000" {
+			num := binary.BigEndian.Uint32(b[:]) % 900000
+			pin := fmt.Sprintf("%06d", 100000+num)
+			if !trivial[pin] {
 				return pin
 			}
 		}
 	}
-	return fmt.Sprintf("%04d", 1000+(time.Now().UnixNano()%8999))
+	return fmt.Sprintf("%06d", 100000+(time.Now().UnixNano()%899999))
 }
 
 func saveActivePin(newPin string) error {
@@ -234,19 +240,6 @@ func recordAuthResult(ip string, success bool) int {
 	return 5 - st.failures
 }
 
-func isLegacySessionHex(s string) bool {
-	if len(s) != 32 {
-		return false
-	}
-	for i := 0; i < 32; i++ {
-		c := s[i]
-		if !((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')) {
-			return false
-		}
-	}
-	return true
-}
-
 func isRequestAuthenticated(r *http.Request) bool {
 	if !isRequestFromInternet(r) {
 		return true
@@ -264,24 +257,15 @@ func isRequestAuthenticated(r *http.Request) bool {
 		if subtle.ConstantTimeCompare([]byte(cookie.Value), []byte(expectedToken)) == 1 {
 			return true
 		}
-		if pin == "8888" && isLegacySessionHex(cookie.Value) {
-			return true
-		}
 	}
 
 	if qAuth := r.URL.Query().Get("auth"); qAuth != "" {
 		if subtle.ConstantTimeCompare([]byte(qAuth), []byte(expectedToken)) == 1 {
 			return true
 		}
-		if pin == "8888" && isLegacySessionHex(qAuth) {
-			return true
-		}
 	}
 	if hAuth := r.Header.Get("X-Vui-Auth"); hAuth != "" {
 		if subtle.ConstantTimeCompare([]byte(hAuth), []byte(expectedToken)) == 1 {
-			return true
-		}
-		if pin == "8888" && isLegacySessionHex(hAuth) {
 			return true
 		}
 	}
@@ -4785,6 +4769,17 @@ func startZankTCPServer() {
 	}
 }
 
+func renderPinLockHTML() string {
+	pin := getActivePin()
+	pinLen := len([]rune(pin))
+	if pinLen < 4 {
+		pinLen = 6
+	} else if pinLen > 12 {
+		pinLen = 12
+	}
+	return strings.ReplaceAll(pinLockHTML, "__PIN_LEN__", strconv.Itoa(pinLen))
+}
+
 const pinLockHTML = `<!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -4803,7 +4798,7 @@ const pinLockHTML = `<!DOCTYPE html>
   .pin-card {
     background: rgba(22, 27, 38, 0.88); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(59, 130, 246, 0.35); border-radius: 20px;
-    padding: 24px 20px 20px; width: 90%; max-width: 320px;
+    padding: 24px 20px 20px; width: 90%; max-width: 340px;
     display: flex; flex-direction: column; align-items: center; text-align: center;
     box-shadow: 0 10px 30px rgba(0,0,0,0.7);
   }
@@ -4812,7 +4807,7 @@ const pinLockHTML = `<!DOCTYPE html>
   }
   .title { font-size: 17px; font-weight: 700; color: #f1f5f9; margin-bottom: 4px; }
   .desc { font-size: 11.5px; color: #94a3b8; margin-bottom: 18px; line-height: 1.4; }
-  .dots { display: flex; gap: 14px; margin-bottom: 22px; }
+  .dots { display: flex; gap: 11px; margin-bottom: 22px; justify-content: center; flex-wrap: wrap; }
   .dot {
     width: 14px; height: 14px; border-radius: 50%; border: 2px solid #475569;
     background: transparent; transition: all 0.15s ease;
@@ -4847,12 +4842,7 @@ const pinLockHTML = `<!DOCTYPE html>
   <div class="title" id="pin-title">VuiRemote Bảo Mật</div>
   <div class="desc" id="pin-desc">Kết nối từ xa qua Internet an toàn.<br>Nhập mã PIN để mở khóa điều khiển.</div>
   
-  <div class="dots" id="dots">
-    <div class="dot" id="dot-0"></div>
-    <div class="dot" id="dot-1"></div>
-    <div class="dot" id="dot-2"></div>
-    <div class="dot" id="dot-3"></div>
-  </div>
+  <div class="dots" id="dots"></div>
 
   <div class="numpad">
     <button class="num-btn" onclick="pressNum('1')">1</button>
@@ -4872,9 +4862,21 @@ const pinLockHTML = `<!DOCTYPE html>
 </div>
 
 <script>
+var PIN_LEN = __PIN_LEN__;
 var currentPin = "";
 var inFlight = false;
 var pinLang = localStorage.getItem('vui_lang') || (((navigator.language || '').toLowerCase().indexOf('vi') === 0) ? 'vi' : 'en');
+
+function initDots() {
+  var wrap = document.getElementById('dots');
+  if (!wrap) return;
+  var html = '';
+  for (var i = 0; i < PIN_LEN; i++) {
+    html += '<div class="dot" id="dot-' + i + '"></div>';
+  }
+  wrap.innerHTML = html;
+}
+initDots();
 
 function applyPinLang() {
   var isEn = (pinLang === 'en');
@@ -4884,8 +4886,8 @@ function applyPinLang() {
   if (btn) btn.innerText = isEn ? '🌐 EN' : '🌐 VI';
   if (title) title.innerText = isEn ? 'VuiRemote Security' : 'VuiRemote Bảo Mật';
   if (desc) desc.innerHTML = isEn
-    ? 'Zero-Trust Remote Internet Access.<br>Enter your 4-digit PIN to unlock.'
-    : 'Kết nối từ xa qua Internet an toàn.<br>Nhập mã PIN để mở khóa điều khiển.';
+    ? ('Zero-Trust Remote Internet Access.<br>Enter your ' + PIN_LEN + '-digit PIN to unlock.')
+    : ('Kết nối từ xa qua Internet an toàn.<br>Nhập mã PIN ' + PIN_LEN + ' số để mở khóa điều khiển.');
 }
 function togglePinLang() {
   pinLang = (pinLang === 'en') ? 'vi' : 'en';
@@ -4895,7 +4897,7 @@ function togglePinLang() {
 applyPinLang();
 
 function updateDots() {
-  for (var i = 0; i < 4; i++) {
+  for (var i = 0; i < PIN_LEN; i++) {
     var d = document.getElementById('dot-' + i);
     if (d) {
       d.className = 'dot' + (i < currentPin.length ? ' filled' : '');
@@ -4904,11 +4906,11 @@ function updateDots() {
 }
 
 function pressNum(num) {
-  if (inFlight || currentPin.length >= 4) return;
+  if (inFlight || currentPin.length >= PIN_LEN) return;
   currentPin += num;
   updateDots();
   if (navigator.vibrate) navigator.vibrate(10);
-  if (currentPin.length === 4) {
+  if (currentPin.length === PIN_LEN) {
     submitPin();
   }
 }
@@ -4930,6 +4932,7 @@ function clearPin() {
 }
 
 function submitPin() {
+  if (inFlight || currentPin.length === 0) return;
   inFlight = true;
   var isEn = (pinLang === 'en');
   var card = document.getElementById('pin-card');
@@ -4963,7 +4966,7 @@ function submitPin() {
         card.classList.add('shake');
         setTimeout(function() { card.classList.remove('shake'); }, 400);
       }
-      for (var i = 0; i < 4; i++) {
+      for (var i = 0; i < PIN_LEN; i++) {
         var d = document.getElementById('dot-' + i);
         if (d) d.className = 'dot error';
       }
@@ -5006,6 +5009,8 @@ document.addEventListener('keydown', function(e) {
     backspacePin();
   } else if (e.key === 'Escape' || e.key === 'Delete') {
     clearPin();
+  } else if (e.key === 'Enter' && currentPin.length >= 4) {
+    submitPin();
   }
 });
 </script>
@@ -11535,8 +11540,8 @@ func handleCLICommand(args []string) bool {
 		fmt.Println("  vuiremote status               Show LAN IP, 4G URL & PIN / Xem trạng thái & PIN")
 		fmt.Println("  vuiremote devices              List configured devices (devices.json) / Danh sách thiết bị")
 		fmt.Println("  vuiremote pin                  Show current Internet PIN / Xem mã PIN hiện tại")
-		fmt.Println("  vuiremote pin <4_DIGITS>       Set a new custom PIN (e.g. vuiremote pin 6868)")
-		fmt.Println("  vuiremote pin --regen          Generate a new random 4-digit PIN / Sinh PIN ngẫu nhiên")
+		fmt.Println("  vuiremote pin <6_DIGITS>       Set a new custom PIN (4-8 digits, e.g. vuiremote pin 686868)")
+		fmt.Println("  vuiremote pin --regen          Generate a new random 6-digit PIN / Sinh PIN 6 số ngẫu nhiên")
 		fmt.Println("  vuiremote tunnel               Show Internet (4G/5G) remote URL / Xem Link điều khiển 4G")
 		fmt.Println("  vuiremote tunnel start [port]  Start free Cloudflare Quick Tunnel in background")
 		fmt.Println("  vuiremote tunnel stop          Stop Cloudflare Tunnel / Dừng dịch vụ Tunnel")
@@ -11555,7 +11560,7 @@ func handleCLICommand(args []string) bool {
 				return true
 			}
 			if len(arg) < 4 {
-				fmt.Println("⚠️ PIN must be at least 4 characters / Mã PIN phải có ít nhất 4 ký tự (e.g. vuiremote pin 6868)")
+				fmt.Println("⚠️ PIN must be at least 4 characters / Mã PIN phải có ít nhất 4 ký tự (e.g. vuiremote pin 686868)")
 				return true
 			}
 			if err := saveActivePin(arg); err != nil {
@@ -11699,7 +11704,7 @@ func main() {
 		if !isRequestAuthenticated(r) {
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
 			w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
-			w.Write([]byte(pinLockHTML))
+			w.Write([]byte(renderPinLockHTML()))
 			return
 		}
 
