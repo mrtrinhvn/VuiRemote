@@ -9,9 +9,14 @@
 
 <p align="center">
   <b><a href="#-english-documentation">🇺🇸 Read in English</a></b> &nbsp;•&nbsp;
-  <b><a href="#-tài-liệu-tiếng-việt-vietnamese-documentation">🇻🇳 Đọc bản Tiếng Việt</a></b> &nbsp;•&nbsp;
-  <b><a href="https://github.com/mrtrinhvn/VuiRemote/raw/main/docs/videos/VuiRemote_TikTok_Shorts_9x16.mp4">📱 Tải Clip TikTok (9:16)</a></b> &nbsp;•&nbsp;
-  <b><a href="https://github.com/mrtrinhvn/VuiRemote/raw/main/docs/videos/VuiRemote_YouTube_16x9.mp4">🖥️ Tải Clip YouTube (16:9)</a></b>
+  <b><a href="#-tài-liệu-tiếng-việt-vietnamese-documentation">🇻🇳 Đọc bản Tiếng Việt</a></b><br>
+  🎬 <b>Tập 1 (Tổng quan):</b>
+  <a href="https://github.com/mrtrinhvn/VuiRemote/raw/main/docs/videos/VuiRemote_TikTok_Shorts_9x16.mp4">📱 TikTok 9:16</a> &nbsp;|&nbsp;
+  <a href="https://github.com/mrtrinhvn/VuiRemote/raw/main/docs/videos/VuiRemote_YouTube_16x9.mp4">🖥️ YouTube 16:9</a>
+  &nbsp;&nbsp;•&nbsp;&nbsp;
+  🔥 <b>Tập 2 (Thực chiến):</b>
+  <a href="https://github.com/mrtrinhvn/VuiRemote/raw/main/docs/videos/VuiRemote_Ep2_TikTok_Shorts_9x16.mp4">📱 TikTok 9:16</a> &nbsp;|&nbsp;
+  <a href="https://github.com/mrtrinhvn/VuiRemote/raw/main/docs/videos/VuiRemote_Ep2_YouTube_16x9.mp4">🖥️ YouTube 16:9</a>
 </p>
 
 <p align="center">
@@ -159,11 +164,16 @@ VuiRemote is built **AI-Agent Native** with [`AGENTS.md`](AGENTS.md), [`CLAUDE.m
 
 ---
 
-## 🎬 Video Giới Thiệu Nhanh (Bản Dọc TikTok `9:16` & Bản Ngang YouTube `16:9`)
+## 🎬 Bộ Video Giới Thiệu & Thực Chiến (Bản Dọc TikTok `9:16` & Bản Ngang YouTube `16:9`)
 
-Mình đã dựng sẵn 2 bản video thuyết minh đầy đủ tính năng của **VuiRemote** (lưu trực tiếp trong repo tại thư mục [`docs/videos/`](docs/videos/)):
-- 📱 **Bản dọc `9:16` (`1080×1920` — TikTok / YouTube Shorts / Reels)**: [**Xem / Tải trực tiếp `VuiRemote_TikTok_Shorts_9x16.mp4`**](https://github.com/mrtrinhvn/VuiRemote/raw/main/docs/videos/VuiRemote_TikTok_Shorts_9x16.mp4)
-- 🖥️ **Bản ngang `16:9` (`1920×1080` — YouTube Full HD / Website)**: [**Xem / Tải trực tiếp `VuiRemote_YouTube_16x9.mp4`**](https://github.com/mrtrinhvn/VuiRemote/raw/main/docs/videos/VuiRemote_YouTube_16x9.mp4)
+Mình đã dựng sẵn trọn bộ 2 tập video thuyết minh giọng chuẩn kèm khoanh vùng trực quan của **VuiRemote** (lưu trực tiếp trong repo tại thư mục [`docs/videos/`](docs/videos/)):
+
+1. **🎬 Tập 1 — Tổng Quan Kiến Trúc & 8 Đột Phá Công Nghệ (Bản mới giọng đọc chuẩn)**:
+   - 📱 **Bản dọc `9:16` (`1080×1920` — TikTok / Shorts / Reels)**: [**Xem / Tải `VuiRemote_TikTok_Shorts_9x16.mp4`**](https://github.com/mrtrinhvn/VuiRemote/raw/main/docs/videos/VuiRemote_TikTok_Shorts_9x16.mp4)
+   - 🖥️ **Bản ngang `16:9` (`1920×1080` — YouTube Full HD)**: [**Xem / Tải `VuiRemote_YouTube_16x9.mp4`**](https://github.com/mrtrinhvn/VuiRemote/raw/main/docs/videos/VuiRemote_YouTube_16x9.mp4)
+2. **🔥 Tập 2 — Trải Nghiệm Thực Chiến: Gọi AI Agent, Bắn File `Ctrl+V`, Chỉnh Máy Chiếu & Chuyển HDMI**:
+   - 📱 **Bản dọc `9:16` (`1080×1920` — TikTok / Shorts / Reels)**: [**Xem / Tải `VuiRemote_Ep2_TikTok_Shorts_9x16.mp4`**](https://github.com/mrtrinhvn/VuiRemote/raw/main/docs/videos/VuiRemote_Ep2_TikTok_Shorts_9x16.mp4)
+   - 🖥️ **Bản ngang `16:9` (`1920×1080` — YouTube Full HD)**: [**Xem / Tải `VuiRemote_Ep2_YouTube_16x9.mp4`**](https://github.com/mrtrinhvn/VuiRemote/raw/main/docs/videos/VuiRemote_Ep2_YouTube_16x9.mp4)
 
 ---
 
