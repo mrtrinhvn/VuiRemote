@@ -2667,20 +2667,6 @@ func enqueueSequencedPCInput(seq int64, fn func()) {
 
 func clearPCOrderedInputQueue() {
 	atomic.AddUint64(&pcInputCancelEpoch, 1)
-	pcSeqMu.Lock()
-	pcPendingSeqMap = make(map[int64]func())
-	pcNextExpectedSeq = 0
-	pcSeqMu.Unlock()
-	if pcOrderedInputCh == nil {
-		return
-	}
-	for {
-		select {
-		case <-pcOrderedInputCh:
-		default:
-			return
-		}
-	}
 }
 
 var (
@@ -3277,9 +3263,9 @@ def execute_req(req, done_ev):
             else:
                 cb.set_text(txt, -1)
                 cb_pri.set_text(txt, -1)
-                pump_gtk(0.003 if is_direct else 0.006)
+                pump_gtk(0.004 if is_direct else 0.006)
                 trigger_x11_paste_combo(paste_key)
-                pump_gtk(0.008 if is_direct else 0.020)
+                pump_gtk(0.018 if is_direct else 0.025)
 
         if ma != 0:
             tap_x11_key("Left" if ma < 0 else "Right", abs(ma))
@@ -5832,7 +5818,7 @@ const htmlPage = `<!DOCTYPE html>
 </style>
 </head>
 <body>
-<input type="file" id="vui-img-upload" multiple style="position:fixed; left:-9999px; top:-9999px; width:1px; height:1px; opacity:0; pointer-events:none;" onchange="handleImageUploadFiles(this.files)">
+<input type="file" id="vui-img-upload" tabindex="-1" multiple style="position:fixed; left:-9999px; top:-9999px; width:1px; height:1px; opacity:0; pointer-events:none;" onfocus="try{this.blur(); if(typeof ensureDesktopImeBridgeFocus==='function')ensureDesktopImeBridgeFocus();}catch(e){}" onchange="handleImageUploadFiles(this.files)">
 
 <!-- Ô nhập cầu nối IME hoàn toàn vô hình đặt ngoài khung xoay .rot-90 để mọi trình duyệt di động luôn cho phép bật bàn phím hệ thống mà không bao giờ hiện khung che màn hình -->
 <div class="smart-input-bar" id="smart-input-bar">
@@ -5878,37 +5864,37 @@ const htmlPage = `<!DOCTYPE html>
           <!-- Watermark Pill Góc Trái Trên: Chọn thiết bị & Công cụ nhanh (Kéo di chuyển tự do & Thu gọn 1 chạm để không bao giờ che Title Bar cửa sổ) -->
           <div class="wm-top-bar" id="wm-top-bar">
             <span class="wm-bar-grip drag-handle" id="wm-top-drag-handle" tabindex="0" aria-label="Giữ kéo hoặc dùng phím mũi tên để di chuyển thanh công cụ" title="Giữ và kéo để di chuyển thanh công cụ tới vị trí bất kỳ (Nhấp đúp để về góc mặc định)">✥</span>
-            <button class="screen-dev-picker-btn wm-keep-collapsed" onclick="openDevModal()" title="Đổi thiết bị điều khiển">
+            <button type="button" class="screen-dev-picker-btn wm-keep-collapsed" onmousedown="event.preventDefault()" onclick="openDevModal()" title="Đổi thiết bị điều khiển">
               <span class="live-dot" id="stream-status-dot"></span>
               <span id="screen-dev-name">📺 Tanix TX3</span>
               <span id="wm-source-badge" class="wm-source-badge" style="display:none;">HDMI 2</span>
               <span style="font-size:8px; opacity:0.7;">▼</span>
             </button>
-            <button class="screen-dev-picker-btn" id="btn-pc-touch-mode" style="display:none; background:rgba(16,185,129,0.24); border-color:rgba(52,211,153,0.55); color:#a7f3d0; padding:0 8px; font-size:10.5px;" onclick="cyclePCTouchMode()" title="Đổi chế độ vuốt 1 ngón trên PC (Kéo thả / Cuộn / Bàn rê)">
+            <button type="button" class="screen-dev-picker-btn" id="btn-pc-touch-mode" style="display:none; background:rgba(16,185,129,0.24); border-color:rgba(52,211,153,0.55); color:#a7f3d0; padding:0 8px; font-size:10.5px;" onmousedown="event.preventDefault()" onclick="cyclePCTouchMode()" title="Đổi chế độ vuốt 1 ngón trên PC (Kéo thả / Cuộn / Bàn rê)">
               <span id="pc-touch-mode-label">🖱️ 1Ngón: Kéo thả</span>
             </button>
-            <button class="screen-dev-picker-btn" id="btn-pc-win-picker" style="display:none; background:rgba(59,130,246,0.25); border-color:rgba(96,165,250,0.55); color:#bfdbfe; padding:0 8px; font-size:10.5px;" onclick="openWindowModal()" title="Làm việc riêng với từng cửa sổ chương trình (Antigravity, Chrome, Terminal...) hoặc Toàn màn hình">
+            <button type="button" class="screen-dev-picker-btn" id="btn-pc-win-picker" style="display:none; background:rgba(59,130,246,0.25); border-color:rgba(96,165,250,0.55); color:#bfdbfe; padding:0 8px; font-size:10.5px;" onmousedown="event.preventDefault()" onclick="openWindowModal()" title="Làm việc riêng với từng cửa sổ chương trình (Antigravity, Chrome, Terminal...) hoặc Toàn màn hình">
               <span id="pc-win-picker-label">🪟 Cửa sổ</span>
             </button>
-            <button class="screen-dev-picker-btn" id="btn-top-kbd" style="background:rgba(37,99,235,0.34); border-color:rgba(96,165,250,0.7); color:#dbeafe; padding:0 10px; font-size:11px;" onclick="toggleQuickInputBar()" title="Bật / Tắt bàn phím ảo trên màn hình (Gõ từ đầu sẽ gửi trực tiếp; khi đang mở ô Giọng nói sẽ dùng để sửa chữ trong ô)">
+            <button type="button" class="screen-dev-picker-btn" id="btn-top-kbd" style="background:rgba(37,99,235,0.34); border-color:rgba(96,165,250,0.7); color:#dbeafe; padding:0 10px; font-size:11px;" onmousedown="event.preventDefault()" onclick="toggleQuickInputBar()" title="Bật / Tắt bàn phím ảo trên màn hình (Gõ từ đầu sẽ gửi trực tiếp; khi đang mở ô Giọng nói sẽ dùng để sửa chữ trong ô)">
               <span id="top-kbd-label">⌨️ Bàn phím</span>
             </button>
-            <button class="screen-dev-picker-btn" id="btn-top-voice" style="background:rgba(5,150,105,0.34); border-color:rgba(52,211,153,0.75); color:#d1fae5; padding:0 10px; font-size:11px;" onclick="toggleVoiceReviewPanel()" title="Nhập giọng nói &amp; Xem/sửa chữ to rõ trước khi gửi sang máy đích">
+            <button type="button" class="screen-dev-picker-btn" id="btn-top-voice" style="background:rgba(5,150,105,0.34); border-color:rgba(52,211,153,0.75); color:#d1fae5; padding:0 10px; font-size:11px;" onmousedown="event.preventDefault()" onclick="toggleVoiceReviewPanel()" title="Nhập giọng nói &amp; Xem/sửa chữ to rõ trước khi gửi sang máy đích">
               <span id="top-voice-label">🎙️ Giọng nói</span>
             </button>
-            <label for="vui-img-upload" class="screen-dev-picker-btn" id="btn-top-attach" style="background:rgba(15,118,110,0.34); border-color:rgba(20,184,166,0.7); color:#ccfbf1; padding:0 8px; font-size:10.5px; cursor:pointer;" onclick="recordActivity()" title="Gửi trực tiếp File (Hình ảnh, Video, Âm thanh, Tài liệu) sang máy được điều khiển">
+            <button type="button" class="screen-dev-picker-btn" id="btn-top-attach" style="background:rgba(15,118,110,0.34); border-color:rgba(20,184,166,0.7); color:#ccfbf1; padding:0 8px; font-size:10.5px; cursor:pointer;" onmousedown="event.preventDefault()" onclick="triggerImageUpload()" title="Gửi trực tiếp File (Hình ảnh, Video, Âm thanh, Tài liệu) sang máy được điều khiển">
               <span id="top-attach-label">📎 Tệp</span>
-            </label>
-            <button class="screen-dev-picker-btn" id="btn-top-stream-mode" style="background:rgba(14,165,233,0.22); border-color:rgba(56,189,248,0.55); color:#bae6fd; padding:0 7px; font-size:10.5px;" onclick="cycleStreamMode()" title="Đổi kiểu truyền: Mặc định (35s tự dừng) ↔ Liên tục khi đang xem">
+            </button>
+            <button type="button" class="screen-dev-picker-btn" id="btn-top-stream-mode" style="background:rgba(14,165,233,0.22); border-color:rgba(56,189,248,0.55); color:#bae6fd; padding:0 7px; font-size:10.5px;" onmousedown="event.preventDefault()" onclick="cycleStreamMode()" title="Đổi kiểu truyền: Mặc định (35s tự dừng) ↔ Liên tục khi đang xem">
               <span id="top-stream-mode-label">⏱ 35s</span>
             </button>
-            <button class="screen-dev-picker-btn" id="btn-top-stream-toggle" style="background:rgba(239,68,68,0.28); border-color:rgba(248,113,113,0.6); color:#fecaca; padding:0 8px; font-size:10.5px;" onclick="toggleStreamActive()" title="Đang truyền hình — Bấm để dừng truyền">
+            <button type="button" class="screen-dev-picker-btn" id="btn-top-stream-toggle" style="background:rgba(239,68,68,0.28); border-color:rgba(248,113,113,0.6); color:#fecaca; padding:0 8px; font-size:10.5px;" onmousedown="event.preventDefault()" onclick="toggleStreamActive()" title="Đang truyền hình — Bấm để dừng truyền">
               <span id="top-stream-toggle-label">⏹ Dừng</span>
             </button>
-            <button class="btn-wm-icon" id="btn-top-lang" onclick="toggleUILanguage()" style="width:auto; padding:0 6px; font-size:10px; font-weight:800; color:#bae6fd; border-color:rgba(56,189,248,0.5);" title="Switch Language (Tiếng Việt / English)">🌐 VI</button>
-            <button class="btn-wm-icon" onclick="openDrawer()" title="Settings & Utilities / Thiết lập & Tiện ích">⚙️</button>
-            <button class="btn-wm-icon" onclick="openHelpModal()" title="Guide / Hướng dẫn">❓</button>
-            <button type="button" class="btn-wm-icon wm-top-collapse-btn" id="wm-top-collapse-btn" onclick="event.stopPropagation(); toggleTopBarCollapse();" title="Thu gọn / Mở rộng thanh công cụ">−</button>
+            <button type="button" class="btn-wm-icon" id="btn-top-lang" onmousedown="event.preventDefault()" onclick="toggleUILanguage()" style="width:auto; padding:0 6px; font-size:10px; font-weight:800; color:#bae6fd; border-color:rgba(56,189,248,0.5);" title="Switch Language (Tiếng Việt / English)">🌐 VI</button>
+            <button type="button" class="btn-wm-icon" onmousedown="event.preventDefault()" onclick="openDrawer()" title="Settings & Utilities / Thiết lập & Tiện ích">⚙️</button>
+            <button type="button" class="btn-wm-icon" onmousedown="event.preventDefault()" onclick="openHelpModal()" title="Guide / Hướng dẫn">❓</button>
+            <button type="button" class="btn-wm-icon wm-top-collapse-btn" id="wm-top-collapse-btn" onmousedown="event.preventDefault()" onclick="event.stopPropagation(); toggleTopBarCollapse();" title="Thu gọn / Mở rộng thanh công cụ">−</button>
           </div>
 
           <!-- Floating External Source Watermark Pill Góc Phải Trên (Kéo di chuyển tự do) -->
@@ -6103,9 +6089,9 @@ const htmlPage = `<!DOCTYPE html>
         <button class="btn" onclick="sendAndroidKeyFromModal(66, 'Enter')" style="background:#1e293b; color:#38bdf8; border:1px solid #334155; padding:7px 2px; border-radius:8px; font-size:11px; font-weight:700; cursor:pointer;">↵ Enter</button>
       </div>
 
-      <label for="vui-img-upload" class="btn" onclick="recordActivity(); setTimeout(closeTextModal, 80);" style="background:#0f766e; color:#fff; border:1px solid #14b8a6; padding:9px 10px; border-radius:8px; font-weight:700; font-size:12px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;">
+      <button type="button" class="btn" onclick="closeTextModal(); triggerImageUpload();" style="background:#0f766e; color:#fff; border:1px solid #14b8a6; padding:9px 10px; border-radius:8px; font-weight:700; font-size:12px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;">
         <span>📎</span><span>Gửi File (Hình ảnh / Âm thanh / Video clip) từ ĐT</span>
-      </label>
+      </button>
 
       <!-- TV Assistant & Close TV Keyboard -->
       <div style="display:flex; gap:6px;">
@@ -7130,12 +7116,12 @@ function enqueueDirectTextDelta(bksp, text, isRepeat) {
       if (text === '' && bksp > 0 && lastRep.text === '') {
         // Không bao giờ cộng dồn (backlog) nhiều phím xóa lùi khi đang giữ phím để buông tay ra là dừng ngay lập tức
         lastRep.bksp = 1;
-        pumpDirectInputQueue();
+        pumpDirectInputQueue(true);
         return;
       }
       if (bksp === 0 && text !== '' && lastRep.bksp === 0) {
         lastRep.text = text;
-        pumpDirectInputQueue();
+        pumpDirectInputQueue(true);
         return;
       }
     }
@@ -7155,8 +7141,13 @@ function enqueueDirectTextDelta(bksp, text, isRepeat) {
       }
       if (last.bksp === 0 && last.text === '') {
         directInputQueue.pop();
+        return;
       }
-      scheduleDeltaPump();
+      if (last.text !== '' && directInFlightCount === 0) {
+        pumpDirectInputQueue(true);
+      } else {
+        scheduleDeltaPump();
+      }
       return;
     }
   }
@@ -7167,8 +7158,8 @@ function enqueueDirectTextDelta(bksp, text, isRepeat) {
     text: text,
     repeat: !!isRepeat
   });
-  // Gửi tức thì (0ms delay) cho ký tự đầu tiên khi đường truyền đang rảnh; nếu có xóa lùi (Unikey/IBus tách sự kiện bksp + bù chữ dấu) hoặc đang có gói tin bay, gom siêu tốc trong 2ms
-  if (isRepeat || (bksp === 0 && text !== '' && directInFlightCount === 0 && !deltaCoalesceTimer)) {
+  // Gửi tức thì (0ms delay) cho mọi thao tác có chữ (text !== '') khi đường truyền đang rảnh; nếu chỉ có xóa lùi đơn lẻ (Unikey/IBus tách sự kiện bksp + bù chữ dấu) hoặc đang có gói tin bay, gom siêu tốc trong 5ms
+  if (isRepeat || (text !== '' && directInFlightCount === 0 && !deltaCoalesceTimer)) {
     pumpDirectInputQueue(true);
   } else {
     scheduleDeltaPump();
@@ -7180,7 +7171,7 @@ function scheduleDeltaPump() {
   deltaCoalesceTimer = setTimeout(function() {
     deltaCoalesceTimer = null;
     pumpDirectInputQueue(true);
-  }, 2);
+  }, 5);
 }
 
 function enqueueDirectKey(code, label, isRepeat) {
@@ -7315,12 +7306,12 @@ function scheduleDirectBufferAutoFlush() {
   directBufferIdleTimer = setTimeout(function() {
     directBufferIdleTimer = null;
     var inp = document.getElementById('quick-txt-input');
-    if (inp && inp._isComposing) {
+    if ((inp && inp._isComposing) || (Date.now() - lastDirectTypeTime < 2400)) {
       scheduleDirectBufferAutoFlush();
       return;
     }
-    resetDirectBuffer(true);
-  }, 1500);
+    resetDirectBuffer(false);
+  }, 2500);
 }
 
 function resetDirectBuffer(forceAbortIme) {
@@ -7334,20 +7325,9 @@ function resetDirectBuffer(forceAbortIme) {
   vkbdWordBuffer = '';
   var inp = document.getElementById('quick-txt-input');
   if (inp) {
-    var hadActiveContent = !!(inp._isComposing || (inp.value && inp.value !== DIRECT_SENTINEL));
     suppressQuickInputEvent = true;
     inp._isComposing = false;
     inp.value = DIRECT_SENTINEL;
-    if (forceAbortIme !== false && hadActiveContent) {
-      ignoreImeCommitUntil = Date.now() + 140;
-      if (document.activeElement === inp) {
-        try {
-          inp.blur();
-          inp.value = DIRECT_SENTINEL;
-          inp.focus({ preventScroll: true });
-        } catch (e) {}
-      }
-    }
     try { inp.setSelectionRange(1, 1); } catch(e) {}
     suppressQuickInputEvent = false;
   }
@@ -9835,6 +9815,10 @@ var lastRealTouchTime = 0;
 function ensureDesktopImeBridgeFocus() {
   if (isMobileTouchOS() || isSleeping) return;
   if (typeof isVoiceReviewOpen === 'function' && isVoiceReviewOpen()) return;
+  var activeEl = document.activeElement;
+  if (activeEl && (activeEl.id === 'vui-img-upload' || ((activeEl.tagName || '').toUpperCase() === 'INPUT' && (activeEl.type || '').toLowerCase() === 'file'))) {
+    try { activeEl.blur(); } catch (e0) {}
+  }
   if (isBlockingModalOrInputActive(document.activeElement)) return;
   var inp = document.getElementById('quick-txt-input');
   if (!inp) return;
@@ -9860,18 +9844,33 @@ function bindGestures() {
       onQuickInputChanged();
     });
   }
+  var fileInp = document.getElementById('vui-img-upload');
+  if (fileInp && !fileInp._focusGuardBound) {
+    fileInp._focusGuardBound = true;
+    fileInp.addEventListener('cancel', function() {
+      try { fileInp.blur(); } catch (e) {}
+      setTimeout(ensureDesktopImeBridgeFocus, 10);
+    });
+  }
   ensureDesktopImeBridgeFocus();
   if (!window._vuiPhysicalKbdBound) {
     window._vuiPhysicalKbdBound = true;
     window.addEventListener('focus', function() {
+      var fInp = document.getElementById('vui-img-upload');
+      if (fInp && document.activeElement === fInp) {
+        try { fInp.blur(); } catch (e) {}
+      }
       ensureDesktopImeBridgeFocus();
+      setTimeout(ensureDesktopImeBridgeFocus, 50);
     });
     window.addEventListener('blur', function() {
       remoteClipboardActive = false;
       cancelPendingKeyRepeats();
     });
     window.addEventListener('keyup', function() {
-      cancelPendingKeyRepeats();
+      if (activeRepeatDirectXhr !== null || lastRepeatSentMs > 0) {
+        cancelPendingKeyRepeats();
+      }
     }, true);
     window.addEventListener('keydown', handleGlobalPhysicalKeyDown, false);
     window.addEventListener('paste', handleGlobalPaste, false);
@@ -10022,7 +10021,12 @@ function isBlockingModalOrInputActive(targetEl) {
   if (typeof isVoiceReviewOpen === 'function' && isVoiceReviewOpen()) return true;
   var inp = document.getElementById('quick-txt-input');
   if (targetEl && targetEl !== inp) {
+    if (targetEl.id === 'vui-img-upload') return false;
     var tag = (targetEl.tagName || '').toUpperCase();
+    var inpType = (targetEl.type || '').toLowerCase();
+    if (tag === 'INPUT' && (inpType === 'file' || inpType === 'button' || inpType === 'submit' || inpType === 'reset')) {
+      return false;
+    }
     if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || targetEl.isContentEditable) {
       return true;
     }
@@ -10174,7 +10178,7 @@ function handlePhysicalSpecialOrShortcut(ev) {
     var cleanVal = inp ? (inp.value || '').replace(/\u200B/g, '') : '';
     if (ev.repeat || document.activeElement !== inp || cleanVal.length === 0) {
       ev.preventDefault();
-      resetDirectBuffer(true);
+      resetDirectBuffer(false);
       enqueueDirectTextDelta(1, '', !!ev.repeat);
       return true;
     }
@@ -10187,6 +10191,9 @@ function handlePhysicalSpecialOrShortcut(ev) {
 
 function handleGlobalPhysicalKeyDown(ev) {
   if (isSleeping) return;
+  if (ev.target && (ev.target.id === 'vui-img-upload' || ((ev.target.tagName || '').toUpperCase() === 'INPUT' && (ev.target.type || '').toLowerCase() === 'file') || (ev.target.tagName || '').toUpperCase() === 'BUTTON')) {
+    try { ev.target.blur(); } catch (e0) {}
+  }
   if (isBlockingModalOrInputActive(ev.target)) return;
   recordActivity();
 
@@ -10206,13 +10213,8 @@ function handleGlobalPhysicalKeyDown(ev) {
   }
 
   // Ký tự in được từ bàn phím vật lý khi #quick-txt-input chưa được focus:
-  // Trên máy tính (!isMobileTouchOS), focus ngay vào #quick-txt-input và KHÔNG gọi preventDefault()
-  // để bộ gõ Tiếng Việt hệ thống (Unikey, EVKey, IBus, Fcitx, macOS/Windows IME) tự xử lý ký tự nguyên bản trong textarea!
+  // Chuyển focus ngay vào #quick-txt-input VÀ ghi luôn ký tự đầu tiên vào bộ đệm để không bao giờ bị rơi mất chữ đầu tiên!
   if (ev.key && ev.key.length === 1 && !ev.ctrlKey && !ev.altKey && !ev.metaKey) {
-    if (inp && !isMobileTouchOS()) {
-      ensureDesktopImeBridgeFocus();
-      return;
-    }
     ev.preventDefault();
     if (inp) {
       inp.removeAttribute('readonly');
@@ -10247,7 +10249,7 @@ function handleGlobalPaste(ev) {
   var pastedText = cd.getData ? cd.getData('text/plain') : '';
   if (pastedText) {
     ev.preventDefault();
-    resetDirectBuffer(true);
+    resetDirectBuffer(false);
     enqueueDirectTextDelta(0, pastedText);
     flashStatus('📋 Đã dán văn bản sang ' + (nameMap[currentDev] || currentDev), true);
   }
@@ -10341,18 +10343,12 @@ function onQuickInputChanged() {
   var bkspCount = oldChars.length - p;
   var appendStr = newChars.slice(p).join('');
 
-  // Chặn hoàn toàn hiện tượng bộ gõ hệ điều hành tự nhả lại (commit) từ cũ đã bị hủy ngay sau khi vừa chuyển con trỏ / chạm màn hình
-  if (Date.now() < ignoreImeCommitUntil && directSentText === '' && bkspCount === 0 && Array.from(appendStr).length > 1) {
-    resetDirectBuffer(false);
-    return;
-  }
-
   // Nếu ô Xem & sửa chữ giọng nói (#voice-review-panel) đang mở, chuyển toàn bộ nội dung nhập vào ô này chứ không gửi thẳng tới máy đích
   if (isVoiceReviewOpen()) {
     if (appendStr.length > 0) {
       openVoiceReviewPanel(appendStr, voiceReviewUseNativeKbd);
     }
-    resetDirectBuffer(true);
+    resetDirectBuffer(false);
     return;
   }
 
@@ -10360,7 +10356,7 @@ function onQuickInputChanged() {
   // Đưa ngay vào ô Textarea chữ to rõ (#voice-review-panel) để xem và chỉnh sửa thủ công trước khi gửi!
   var appendChars = Array.from(appendStr);
   if (isMobileTouchOS() && ((appendStr.trim().indexOf(' ') !== -1 && appendChars.length >= 4) || appendChars.length >= 12)) {
-    resetDirectBuffer(true);
+    resetDirectBuffer(false);
     openVoiceReviewPanel(normNew, true);
     flashStatus(isEN()
       ? '🎙️ Voice dictation captured in Review Box — Edit & tap Send!'
@@ -10375,15 +10371,14 @@ function onQuickInputChanged() {
   }
 
   if (hasNewline) {
-    resetDirectBuffer(true);
+    resetDirectBuffer(false);
     enqueueDirectKey(66, 'Enter ↵');
     return;
   }
 
-  // Ngay khi kết thúc 1 từ (gõ dấu cách hoặc dấu câu) và không còn trong trạng thái gạch chân IME:
-  // xóa trắng bộ đệm #quick-txt-input ngay lập tức để ô ẩn KHÔNG BAO GIỜ ngậm lại từ cũ!
-  if (!inp._isComposing && cleanVal.length > 0 && /[\s.,!?;:()\[\]{}"'\/\-]$/.test(cleanVal)) {
-    resetDirectBuffer(true);
+  // Chỉ làm gọn bộ đệm khi chuỗi đã dài (> 120 ký tự) và kết thúc bằng khoảng trắng để không bao giờ ngắt quãng bộ gõ Tiếng Việt (Unikey/IBus) khi đang gõ nhanh giữa các từ
+  if (!inp._isComposing && cleanVal.length > 120 && /\s$/.test(cleanVal)) {
+    resetDirectBuffer(false);
     return;
   }
 
@@ -10453,6 +10448,11 @@ function triggerImageUpload() {
   if (!fileInp) return;
   fileInp.value = '';
   fileInp.click();
+  try { fileInp.blur(); } catch (e) {}
+  if (document.activeElement && document.activeElement !== document.getElementById('quick-txt-input')) {
+    try { document.activeElement.blur(); } catch (e2) {}
+  }
+  setTimeout(ensureDesktopImeBridgeFocus, 30);
 }
 
 function convertFileToPngBlob(file, cb) {
@@ -10494,14 +10494,22 @@ function convertFileToPngBlob(file, cb) {
 
 function handleImageUploadFiles(files) {
   recordActivity();
+  var fileInp = document.getElementById('vui-img-upload');
+  if (fileInp) {
+    try { fileInp.blur(); } catch (e) {}
+  }
+  ensureDesktopImeBridgeFocus();
   if (!files || files.length === 0) return;
   var list = [];
   for (var i = 0; i < files.length; i++) {
     list.push(files[i]);
   }
   uploadQueuedFilesNow(list, function() {
-    var fileInp = document.getElementById('vui-img-upload');
-    if (fileInp) fileInp.value = '';
+    if (fileInp) {
+      fileInp.value = '';
+      try { fileInp.blur(); } catch (e2) {}
+    }
+    ensureDesktopImeBridgeFocus();
   });
 }
 
