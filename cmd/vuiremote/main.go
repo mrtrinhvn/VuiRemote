@@ -146,6 +146,44 @@ func saveActivePin(newPin string) error {
 	return os.WriteFile(target, []byte(newPin+"\n"), 0600)
 }
 
+func syncPinToAllPeers(newPin string) {
+	newPin = strings.TrimSpace(newPin)
+	if newPin == "" {
+		return
+	}
+	hosts := map[string]bool{
+		"192.168.1.88:8080":  true,
+		"192.168.1.154:8090": true,
+	}
+	deviceRegistryMu.RLock()
+	for _, d := range deviceRegistry {
+		if d != nil && strings.TrimSpace(d.Host) != "" {
+			hosts[strings.TrimSpace(d.Host)] = true
+		}
+	}
+	deviceRegistryMu.RUnlock()
+
+	myIP := getCurrentLocalIP()
+	client := &http.Client{Timeout: 2 * time.Second}
+	for h := range hosts {
+		if myIP != "" && strings.HasPrefix(h, myIP+":") {
+			continue
+		}
+		targetHost := h
+		go func() {
+			u := fmt.Sprintf("http://%s/api/pin?pin=%s&internal_sync=1", targetHost, url.QueryEscape(newPin))
+			req, err := http.NewRequest("POST", u, nil)
+			if err != nil {
+				return
+			}
+			resp, err := client.Do(req)
+			if err == nil && resp != nil {
+				resp.Body.Close()
+			}
+		}()
+	}
+}
+
 func getActivePin() string {
 	if envP := strings.TrimSpace(os.Getenv("VUI_PIN")); envP != "" {
 		return envP
@@ -6311,6 +6349,27 @@ const htmlPage = `<!DOCTYPE html>
       </div>
     </div>
 
+    <div class="drawer-section-title" id="drawer-sec-security">🔐 Bảo mật Internet (4G/5G) &amp; Đổi Mã PIN</div>
+    <div id="drawer-pin-card" style="background:rgba(15,23,42,0.88); border:1px solid rgba(56,189,248,0.38); border-radius:12px; padding:10px 12px; margin-bottom:12px;">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px; flex-wrap:wrap;">
+        <div style="font-size:12px; color:#cbd5e1; display:flex; align-items:center; gap:6px;">
+          <span id="drawer-pin-label">🔑 Mã PIN hiện tại:</span>
+          <strong id="drawer-current-pin" style="font-family:monospace; font-size:15px; letter-spacing:2px; color:#38bdf8; background:rgba(2,132,199,0.2); padding:2px 8px; border-radius:6px; border:1px solid rgba(56,189,248,0.4);">••••••</strong>
+        </div>
+        <div style="display:flex; gap:6px;">
+          <button type="button" onclick="copyCurrentPinFromDrawer()" style="height:26px; padding:0 8px; font-size:11px; font-weight:600; border-radius:7px; border:1px solid rgba(56,189,248,0.45); background:rgba(14,165,233,0.18); color:#bae6fd; cursor:pointer;" id="btn-drawer-copy-pin">📋 Sao chép</button>
+          <button type="button" onclick="regenPinFromDrawer()" style="height:26px; padding:0 8px; font-size:11px; font-weight:600; border-radius:7px; border:1px solid rgba(168,85,247,0.5); background:rgba(147,51,234,0.22); color:#e9d5ff; cursor:pointer;" id="btn-drawer-regen-pin">🎲 Ngẫu nhiên 6 số</button>
+        </div>
+      </div>
+      <div style="display:flex; gap:6px; align-items:center;">
+        <input type="text" id="drawer-new-pin-input" inputmode="numeric" pattern="[0-9]*" maxlength="12" placeholder="Nhập PIN mới (4–8 số, VD: 686868)..." onkeydown="if(event.key==='Enter'){event.preventDefault();saveCustomPinFromDrawer();}" style="flex:1; height:34px; font-size:13px; border-radius:8px; background:#090d16; border:1px solid #334155; padding:0 10px; color:#f8fafc; outline:none; letter-spacing:1px;">
+        <button type="button" onclick="saveCustomPinFromDrawer()" style="height:34px; padding:0 12px; font-size:12px; font-weight:700; border-radius:8px; border:1px solid rgba(34,197,94,0.6); background:linear-gradient(135deg, #059669, #10b981); color:#fff; cursor:pointer; white-space:nowrap;" id="btn-drawer-save-pin">💾 Đổi PIN</button>
+      </div>
+      <div id="drawer-pin-status" style="font-size:11px; color:#94a3b8; margin-top:6px; line-height:1.35;">
+        Miễn hỏi PIN khi dùng Wi-Fi ở nhà • Tự động đồng bộ PC &amp; TX3 Mini
+      </div>
+    </div>
+
     <div class="drawer-section-title">🚀 Mở Nhanh Ứng Dụng</div>
     <div class="drawer-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom:12px;">
       <div class="drawer-btn" onclick="closeDrawer(); app('studio.scillarium.ottnavigator', 'Truyền hình OTT')">
@@ -6384,6 +6443,10 @@ const htmlPage = `<!DOCTYPE html>
       <div class="drawer-btn" onclick="showTunnelInfo()" style="border-color:#10b98166; background:#064e3b33; color:#6ee7b7;">
         <span class="d-icon">🌐</span>
         <span>Link Internet (4G)</span>
+      </div>
+      <div class="drawer-btn" onclick="focusDrawerPinInput()" style="border-color:#38bdf866; background:#0c4a6e44; color:#bae6fd;">
+        <span class="d-icon">🔑</span>
+        <span>Đổi Mã PIN</span>
       </div>
       <div class="drawer-btn" onclick="drawerAction('reboot', 'Khởi động lại Máy')" style="border-color:#f8717155; color:#fca5a5;">
         <span class="d-icon">&#x1F504;</span>
@@ -10038,6 +10101,8 @@ function isBlockingModalOrInputActive(targetEl) {
   }
   var txtModal = document.getElementById('text-modal');
   if (txtModal && txtModal.classList.contains('show')) return true;
+  var drawerModal = document.getElementById('drawer-modal');
+  if (drawerModal && drawerModal.classList.contains('show')) return true;
   return false;
 }
 
@@ -11190,9 +11255,125 @@ function sendText(textToSend) {
 function openDrawer() {
   updateStreamButtonsUI();
   document.getElementById('drawer-modal').classList.add('show');
+  loadCurrentPinToDrawer();
 }
 function closeDrawer() {
   document.getElementById('drawer-modal').classList.remove('show');
+  setTimeout(ensureDesktopImeBridgeFocus, 50);
+}
+
+function loadCurrentPinToDrawer() {
+  var pinEl = document.getElementById('drawer-current-pin');
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '/api/pin?t=' + Date.now(), true);
+  xhr.onload = function() {
+    if (xhr.status === 200) {
+      try {
+        var res = JSON.parse(xhr.responseText);
+        if (res && res.pin && pinEl) {
+          pinEl.innerText = res.pin;
+        }
+      } catch (e) {}
+    }
+  };
+  xhr.send();
+}
+
+function focusDrawerPinInput() {
+  var card = document.getElementById('drawer-pin-card');
+  var inp = document.getElementById('drawer-new-pin-input');
+  if (card && card.scrollIntoView) {
+    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+  if (inp) {
+    setTimeout(function() { inp.focus(); inp.select(); }, 120);
+  }
+}
+
+function copyCurrentPinFromDrawer() {
+  var pinEl = document.getElementById('drawer-current-pin');
+  var statusEl = document.getElementById('drawer-pin-status');
+  var pin = pinEl ? (pinEl.innerText || '').trim() : '';
+  if (!pin || pin.indexOf('•') !== -1) return;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(pin);
+  }
+  var msg = isEN()
+    ? ('✅ Copied PIN to clipboard: ' + pin)
+    : ('✅ Đã sao chép mã PIN vào bộ nhớ tạm: ' + pin);
+  if (statusEl) {
+    statusEl.style.color = '#86efac';
+    statusEl.innerText = msg;
+  }
+  flashStatus(msg, true);
+}
+
+function applyPinUpdateResponse(res, isRegen) {
+  var en = isEN();
+  var pinEl = document.getElementById('drawer-current-pin');
+  var inp = document.getElementById('drawer-new-pin-input');
+  var statusEl = document.getElementById('drawer-pin-status');
+  if (res && res.ok && res.pin) {
+    if (pinEl) pinEl.innerText = res.pin;
+    if (inp) inp.value = '';
+    if (res.token) {
+      try { localStorage.setItem('vui_auth', res.token); } catch (e) {}
+      document.cookie = "vui_session=" + res.token + "; path=/; max-age=" + (30 * 86400) + "; SameSite=Lax";
+    }
+    var msg = isRegen
+      ? (en ? ('✅ Generated new 6-digit PIN: ' + res.pin + ' (Synced across PC & TX3 Mini)') : ('✅ Đã sinh PIN 6 số mới: ' + res.pin + ' (Đã đồng bộ PC & TX3 Mini)'))
+      : (en ? ('✅ Updated PIN to: ' + res.pin + ' (Synced across PC & TX3 Mini)') : ('✅ Đã đổi mã PIN thành: ' + res.pin + ' (Đã đồng bộ PC & TX3 Mini)'));
+    if (statusEl) {
+      statusEl.style.color = '#86efac';
+      statusEl.innerText = msg;
+    }
+    flashStatus(msg, true);
+  } else {
+    var errMsg = (res && res.error) ? res.error : (en ? 'Failed to update PIN' : 'Không thể đổi mã PIN');
+    if (statusEl) {
+      statusEl.style.color = '#fca5a5';
+      statusEl.innerText = '⚠️ ' + errMsg;
+    }
+    flashStatus('⚠️ ' + errMsg, false);
+  }
+}
+
+function saveCustomPinFromDrawer() {
+  var en = isEN();
+  var inp = document.getElementById('drawer-new-pin-input');
+  var statusEl = document.getElementById('drawer-pin-status');
+  var newPin = inp ? (inp.value || '').trim() : '';
+  if (newPin.length < 4 || newPin.length > 12) {
+    var warn = en
+      ? '⚠️ PIN must be 4–12 characters (recommended: 6 digits, e.g. 686868)'
+      : '⚠️ Mã PIN phải từ 4 đến 12 ký tự (khuyên dùng 6 số, VD: 686868)';
+    if (statusEl) {
+      statusEl.style.color = '#fcd34d';
+      statusEl.innerText = warn;
+    }
+    flashStatus(warn, false);
+    if (inp) inp.focus();
+    return;
+  }
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', '/api/pin?pin=' + encodeURIComponent(newPin) + '&t=' + Date.now(), true);
+  xhr.onload = function() {
+    try {
+      applyPinUpdateResponse(JSON.parse(xhr.responseText), false);
+    } catch (e) {}
+  };
+  xhr.send();
+}
+
+function regenPinFromDrawer() {
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', '/api/pin?action=regen&t=' + Date.now(), true);
+  xhr.onload = function() {
+    try {
+      applyPinUpdateResponse(JSON.parse(xhr.responseText), true);
+    } catch (e) {}
+  };
+  xhr.send();
 }
 
 // Help Modal Open / Close
@@ -11358,6 +11539,24 @@ function applyUILanguage() {
   if (langBtn) {
     langBtn.innerText = en ? '🌐 EN' : '🌐 VI';
     langBtn.title = en ? 'Switch Language to Tiếng Việt (VI)' : 'Chuyển ngôn ngữ sang Tiếng Anh (English)';
+  }
+  var secPin = document.getElementById('drawer-sec-security');
+  if (secPin) secPin.innerText = en ? '🔐 Internet Security (4G/5G) & Change PIN' : '🔐 Bảo mật Internet (4G/5G) & Đổi Mã PIN';
+  var pinLbl = document.getElementById('drawer-pin-label');
+  if (pinLbl) pinLbl.innerText = en ? '🔑 Current PIN:' : '🔑 Mã PIN hiện tại:';
+  var copyPinBtn = document.getElementById('btn-drawer-copy-pin');
+  if (copyPinBtn) copyPinBtn.innerText = en ? '📋 Copy' : '📋 Sao chép';
+  var regenPinBtn = document.getElementById('btn-drawer-regen-pin');
+  if (regenPinBtn) regenPinBtn.innerText = en ? '🎲 Random 6-digit' : '🎲 Ngẫu nhiên 6 số';
+  var newPinInp = document.getElementById('drawer-new-pin-input');
+  if (newPinInp) newPinInp.placeholder = en ? 'Enter new PIN (4–8 digits, e.g. 686868)...' : 'Nhập PIN mới (4–8 số, VD: 686868)...';
+  var savePinBtn = document.getElementById('btn-drawer-save-pin');
+  if (savePinBtn) savePinBtn.innerText = en ? '💾 Save PIN' : '💾 Đổi PIN';
+  var pinStatus = document.getElementById('drawer-pin-status');
+  if (pinStatus && pinStatus.innerText.indexOf('✅') === -1 && pinStatus.innerText.indexOf('⚠️') === -1) {
+    pinStatus.innerText = en
+      ? 'PIN-free on home Wi-Fi • Auto-synced across PC & TX3 Mini'
+      : 'Miễn hỏi PIN khi dùng Wi-Fi ở nhà • Tự động đồng bộ PC & TX3 Mini';
   }
   var kbdLbl = document.getElementById('top-kbd-label');
   var kbdBtn = document.getElementById('btn-top-kbd');
@@ -11549,6 +11748,7 @@ func handleCLICommand(args []string) bool {
 
 	case "pin":
 		if len(args) >= 2 {
+			initDefaultDevices()
 			arg := strings.TrimSpace(args[1])
 			if arg == "--regen" || arg == "regen" || arg == "random" {
 				newPin := generateRandomPin()
@@ -11556,7 +11756,9 @@ func handleCLICommand(args []string) bool {
 					fmt.Printf("❌ Failed to save PIN / Không thể lưu mã PIN: %v\n", err)
 					return true
 				}
-				fmt.Printf("🔑 Generated new random PIN / Đã sinh mã PIN mới: %s\n", newPin)
+				syncPinToAllPeers(newPin)
+				time.Sleep(350 * time.Millisecond)
+				fmt.Printf("🔑 Generated new random PIN / Đã sinh mã PIN mới (đã đồng bộ): %s\n", newPin)
 				return true
 			}
 			if len(arg) < 4 {
@@ -11567,7 +11769,9 @@ func handleCLICommand(args []string) bool {
 				fmt.Printf("❌ Failed to save PIN / Không thể lưu mã PIN: %v\n", err)
 				return true
 			}
-			fmt.Printf("✅ Updated Internet security PIN / Đã cập nhật mã PIN thành: %s\n", arg)
+			syncPinToAllPeers(arg)
+			time.Sleep(350 * time.Millisecond)
+			fmt.Printf("✅ Updated Internet security PIN / Đã cập nhật mã PIN thành (đã đồng bộ): %s\n", arg)
 			return true
 		}
 		fmt.Printf("🔑 Current Internet Security PIN / Mã PIN hiện tại: %s\n", getActivePin())
@@ -11763,6 +11967,65 @@ func main() {
 			"url":       tunnelURL,
 			"short_url": cfg.ShortURL,
 			"pin":       pin,
+		}
+		b, _ := json.Marshal(respObj)
+		w.Write(b)
+	})
+
+	http.HandleFunc("/api/pin", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Content-Type", "application/json")
+		isInternalSync := r.URL.Query().Get("internal_sync") == "1" && !isRequestFromInternet(r)
+		if !isInternalSync && !requireAuth(w, r) {
+			return
+		}
+		if r.Method == http.MethodPost {
+			action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+			newPin := strings.TrimSpace(r.URL.Query().Get("pin"))
+			if newPin == "" {
+				_ = r.ParseForm()
+				newPin = strings.TrimSpace(r.FormValue("pin"))
+				if action == "" {
+					action = strings.ToLower(strings.TrimSpace(r.FormValue("action")))
+				}
+			}
+			if action == "regen" || action == "random" {
+				newPin = generateRandomPin()
+			}
+			if len(newPin) < 4 || len(newPin) > 12 {
+				w.WriteHeader(http.StatusBadRequest)
+				w.Write([]byte(`{"ok":false,"error":"Mã PIN phải từ 4 đến 12 ký tự"}`))
+				return
+			}
+			if err := saveActivePin(newPin); err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				w.Write([]byte(fmt.Sprintf(`{"ok":false,"error":%q}`, err.Error())))
+				return
+			}
+			if !isInternalSync {
+				syncPinToAllPeers(newPin)
+			}
+			token := computeAuthToken(newPin)
+			http.SetCookie(w, &http.Cookie{
+				Name:     "vui_session",
+				Value:    token,
+				Path:     "/",
+				MaxAge:   30 * 86400,
+				HttpOnly: false,
+				SameSite: http.SameSiteLaxMode,
+			})
+			respObj := map[string]interface{}{
+				"ok":    true,
+				"pin":   newPin,
+				"token": token,
+			}
+			b, _ := json.Marshal(respObj)
+			w.Write(b)
+			return
+		}
+		respObj := map[string]interface{}{
+			"ok":  true,
+			"pin": getActivePin(),
 		}
 		b, _ := json.Marshal(respObj)
 		w.Write(b)
