@@ -1319,10 +1319,32 @@ func getHostName() string {
 func getLocalMAC() string {
 	ifaces, err := net.Interfaces()
 	if err == nil {
+		var fallback string
 		for _, iface := range ifaces {
-			if iface.Flags&net.FlagUp != 0 && iface.Flags&net.FlagLoopback == 0 && len(iface.HardwareAddr) > 0 {
-				return iface.HardwareAddr.String()
+			if iface.Flags&net.FlagUp == 0 || iface.Flags&net.FlagLoopback != 0 || len(iface.HardwareAddr) == 0 {
+				continue
 			}
+			mac := iface.HardwareAddr.String()
+			if fallback == "" {
+				fallback = mac
+			}
+			addrs, err := iface.Addrs()
+			if err != nil {
+				continue
+			}
+			for _, addr := range addrs {
+				if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+					if ip4 := ipnet.IP.To4(); ip4 != nil {
+						ipStr := ip4.String()
+						if (myIP != "" && ipStr == myIP) || strings.HasPrefix(ipStr, "192.168.") || strings.HasPrefix(ipStr, "10.") {
+							return mac
+						}
+					}
+				}
+			}
+		}
+		if fallback != "" {
+			return fallback
 		}
 	}
 	return "e4:54:e8:8c:69:30"
@@ -1375,6 +1397,9 @@ func initDefaultDevices() {
 					}
 					if v.ID == "projector" && v.MAC == "" {
 						v.MAC = "8c:bd:37:79:65:cc"
+					}
+					if v.ID == "kaw" && v.MAC == "" {
+						v.MAC = "a8:77:e5:da:c7:c5"
 					}
 					deviceRegistry[k] = v
 					loadedFromFile = true
@@ -1440,8 +1465,8 @@ func initDefaultDevices() {
 			ID:       "kaw",
 			Name:     "Máy chiếu KAW A70 Pro",
 			Icon:     "📽",
-			Host:     "192.168.1.138:8080",
-			MAC:      "",
+			Host:     "192.168.1.153:8080",
+			MAC:      "a8:77:e5:da:c7:c5",
 			Type:     "projector",
 			Platform: "android",
 			Online:   false,
@@ -1489,8 +1514,8 @@ func getDeviceHost(dev string) string {
 	switch dev {
 	case "tx3", "192.168.1.88", "192.168.1.140", "192.168.1.67":
 		return "192.168.1.88:8080"
-	case "kaw", "192.168.1.138":
-		return "192.168.1.138:8080"
+	case "kaw", "192.168.1.138", "192.168.1.153":
+		return "192.168.1.153:8080"
 	case "projector", "192.168.1.135", "192.168.1.136":
 		return "192.168.1.136:8080"
 	case "pc", "192.168.1.154", "192.168.1.161":
@@ -1803,6 +1828,7 @@ func resolveMovedDeviceHost(dev *DeviceInfo) bool {
 		addCand("192.168.1.136")
 		addCand("192.168.1.135")
 	case "kaw":
+		addCand("192.168.1.153")
 		addCand("192.168.1.138")
 	case "tx3":
 		addCand("192.168.1.88")
@@ -3749,7 +3775,7 @@ func initDeviceIdentity() {
 		mac := strings.ToLower(getLocalMAC())
 		if _, err := os.Stat("/system/xbin/zu"); err == nil || strings.Contains(arg0, "hyundai") || mac == "8c:bd:37:79:65:cc" {
 			myDeviceType = "projector"
-		} else if _, err := os.Stat("/system/xbin/rjsu"); err == nil || strings.Contains(arg0, "kaw") {
+		} else if _, err := os.Stat("/system/xbin/rjsu"); err == nil || strings.Contains(arg0, "kaw") || mac == "a8:77:e5:da:c7:c5" {
 			myDeviceType = "kaw"
 		} else if _, err := os.Stat("/data/local/dnse_gateway"); err == nil || strings.Contains(arg0, "tx3") {
 			myDeviceType = "tx3"
@@ -3772,7 +3798,7 @@ func initDeviceIdentity() {
 						myDeviceType = "projector"
 						myIP = ip
 						break
-					} else if myDeviceType == "kaw" || strings.Contains(ip, "192.168.1.138") {
+					} else if myDeviceType == "kaw" || strings.Contains(ip, "192.168.1.138") || strings.Contains(ip, "192.168.1.153") {
 						myDeviceType = "kaw"
 						myIP = ip
 						break
@@ -4029,8 +4055,8 @@ func initInputDevice() {
 	if myDeviceType == "projector" {
 		exec.Command("/system/xbin/zu", "0", "sh", "-c", "chmod 666 /dev/uinput /dev/input/event*").Run()
 	} else if myDeviceType == "kaw" {
-		exec.Command("/system/xbin/rjsu", "0", "sh", "-c", "chmod 666 /dev/uinput /dev/input/event*").Run()
-		exec.Command("su", "0", "sh", "-c", "chmod 666 /dev/uinput /dev/input/event*").Run()
+		exec.Command("/system/xbin/rjsu", "0", "sh", "-c", "chmod 666 /dev/uinput /dev/input/event*; setprop vendor.mstar.desk-display-mode 0").Run()
+		exec.Command("su", "0", "sh", "-c", "chmod 666 /dev/uinput /dev/input/event*; setprop vendor.mstar.desk-display-mode 0").Run()
 	}
 	var err error
 	eventFd, err = os.OpenFile("/dev/input/event0", os.O_WRONLY, 0666)
@@ -4545,8 +4571,8 @@ func forwardIfRemote(w http.ResponseWriter, r *http.Request) bool {
 		return false
 	}
 	if (myDeviceType == "tx3" && (dev == "tx3" || dev == "192.168.1.88" || dev == "192.168.1.140" || dev == "192.168.1.67")) ||
-		(myDeviceType == "projector" && (dev == "projector" || dev == "192.168.1.135")) ||
-		(myDeviceType == "kaw" && (dev == "kaw" || dev == "192.168.1.138")) ||
+		(myDeviceType == "projector" && (dev == "projector" || dev == "192.168.1.135" || dev == "192.168.1.136")) ||
+		(myDeviceType == "kaw" && (dev == "kaw" || dev == "192.168.1.138" || dev == "192.168.1.153")) ||
 		(myDeviceType == "pc" && (dev == "pc" || dev == "192.168.1.154" || dev == "192.168.1.161")) ||
 		(myDeviceType == "win11" && (dev == "win11" || dev == "192.168.1.55")) {
 		return false
