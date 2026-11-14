@@ -977,6 +977,9 @@ func maintainTX3NetworkFailover() {
 	if !isAndroid() || myDeviceType != "tx3" {
 		return
 	}
+	if _, err := os.Stat("/data/local/dnse_gateway"); err != nil {
+		return
+	}
 	carrierBytes, err := os.ReadFile("/sys/class/net/eth0/carrier")
 	ethPlugged := (err == nil && strings.TrimSpace(string(carrierBytes)) == "1")
 
@@ -1351,7 +1354,7 @@ func isOwnerDefaultEnvironment() bool {
 	}
 	ip := getCurrentLocalIP()
 	switch ip {
-	case "192.168.1.88", "192.168.1.140", "192.168.1.154", "192.168.1.55", "192.168.1.135", "192.168.1.138":
+	case "192.168.1.88", "192.168.1.140", "192.168.1.154", "192.168.1.55", "192.168.1.135", "192.168.1.136", "192.168.1.138":
 		return true
 	}
 	return false
@@ -1369,6 +1372,9 @@ func initDefaultDevices() {
 				if v != nil && v.ID != "" {
 					if v.ID == "pc" && v.Host == "192.168.1.161:8090" {
 						v.Host = "192.168.1.154:8090"
+					}
+					if v.ID == "projector" && v.MAC == "" {
+						v.MAC = "8c:bd:37:79:65:cc"
 					}
 					deviceRegistry[k] = v
 					loadedFromFile = true
@@ -1422,8 +1428,8 @@ func initDefaultDevices() {
 			ID:       "projector",
 			Name:     "Máy chiếu Hyundai",
 			Icon:     "📽",
-			Host:     "192.168.1.135:8080",
-			MAC:      "",
+			Host:     "192.168.1.136:8080",
+			MAC:      "8c:bd:37:79:65:cc",
 			Type:     "projector",
 			Platform: "android",
 			Online:   false,
@@ -1485,8 +1491,8 @@ func getDeviceHost(dev string) string {
 		return "192.168.1.88:8080"
 	case "kaw", "192.168.1.138":
 		return "192.168.1.138:8080"
-	case "projector", "192.168.1.135":
-		return "192.168.1.135:8080"
+	case "projector", "192.168.1.135", "192.168.1.136":
+		return "192.168.1.136:8080"
 	case "pc", "192.168.1.154", "192.168.1.161":
 		return "192.168.1.154:8090"
 	case "win11", "192.168.1.55":
@@ -1758,9 +1764,90 @@ var (
 	lastSubnetScanUnix int64
 )
 
+func resolveMovedDeviceHost(dev *DeviceInfo) bool {
+	if dev == nil || dev.ID == "" {
+		return false
+	}
+	curHost, port, err := net.SplitHostPort(dev.Host)
+	if err != nil || port == "" {
+		port = "8080"
+		if dev.Type == "pc" {
+			port = "8090"
+		}
+	}
+
+	seen := map[string]bool{curHost: true}
+	var candIPs []string
+	addCand := func(ip string) {
+		ip = strings.TrimSpace(ip)
+		if ip != "" && !seen[ip] && !isOwnLocalIP(ip) {
+			seen[ip] = true
+			candIPs = append(candIPs, ip)
+		}
+	}
+
+	if dev.MAC != "" {
+		if arpBytes, err := os.ReadFile("/proc/net/arp"); err == nil {
+			lines := strings.Split(string(arpBytes), "\n")
+			for _, line := range lines[1:] {
+				fields := strings.Fields(line)
+				if len(fields) >= 4 && fields[2] == "0x2" && strings.EqualFold(fields[3], dev.MAC) {
+					addCand(fields[0])
+				}
+			}
+		}
+	}
+
+	switch dev.ID {
+	case "projector":
+		addCand("192.168.1.136")
+		addCand("192.168.1.135")
+	case "kaw":
+		addCand("192.168.1.138")
+	case "tx3":
+		addCand("192.168.1.88")
+		addCand("192.168.1.140")
+		addCand("192.168.1.67")
+	}
+
+	client := &http.Client{Timeout: 500 * time.Millisecond}
+	for _, ip := range candIPs {
+		candHost := fmt.Sprintf("%s:%s", ip, port)
+		conn, err := net.DialTimeout("tcp", candHost, 450*time.Millisecond)
+		if err != nil {
+			continue
+		}
+		conn.Close()
+
+		verified := false
+		if resp, err := client.Get("http://" + candHost + "/api/status"); err == nil {
+			body, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
+			resp.Body.Close()
+			var st struct {
+				Status string `json:"status"`
+				Device string `json:"device"`
+				MAC    string `json:"mac"`
+			}
+			if json.Unmarshal(body, &st) == nil && st.Status == "online" {
+				if st.Device == dev.ID || (dev.MAC != "" && strings.EqualFold(st.MAC, dev.MAC)) {
+					verified = true
+				}
+			}
+		}
+		if verified {
+			dev.Host = candHost
+			dev.Online = true
+			dev.LastSeen = time.Now().Unix()
+			updatePeerInRegistry(*dev)
+			return true
+		}
+	}
+	return false
+}
+
 func discoverMovedPeersOnSubnet() {
 	nowUnix := time.Now().Unix()
-	if nowUnix-atomic.LoadInt64(&lastSubnetScanUnix) < 90 {
+	if nowUnix-atomic.LoadInt64(&lastSubnetScanUnix) < 30 {
 		return
 	}
 	if !atomic.CompareAndSwapInt32(&subnetScanInFlight, 0, 1) {
@@ -1787,7 +1874,7 @@ func discoverMovedPeersOnSubnet() {
 		}
 	}
 	if prefix == "192.168.1." {
-		for _, hostOctet := range []int{88, 140, 67, 154, 161, 55, 135, 138} {
+		for _, hostOctet := range []int{88, 140, 67, 154, 161, 55, 135, 136, 138} {
 			ip := fmt.Sprintf("192.168.1.%d", hostOctet)
 			if !seen[ip] {
 				seen[ip] = true
@@ -3657,6 +3744,16 @@ func initDeviceIdentity() {
 		myDeviceType = "pc"
 		atomic.StoreInt32(&detectedWidth, 2560)
 		atomic.StoreInt32(&detectedHeight, 1440)
+	} else {
+		arg0 := strings.ToLower(os.Args[0])
+		mac := strings.ToLower(getLocalMAC())
+		if _, err := os.Stat("/system/xbin/zu"); err == nil || strings.Contains(arg0, "hyundai") || mac == "8c:bd:37:79:65:cc" {
+			myDeviceType = "projector"
+		} else if _, err := os.Stat("/system/xbin/rjsu"); err == nil || strings.Contains(arg0, "kaw") {
+			myDeviceType = "kaw"
+		} else if _, err := os.Stat("/data/local/dnse_gateway"); err == nil || strings.Contains(arg0, "tx3") {
+			myDeviceType = "tx3"
+		}
 	}
 	addrs, err := net.InterfaceAddrs()
 	if err == nil {
@@ -3671,11 +3768,11 @@ func initDeviceIdentity() {
 								break
 							}
 						}
-					} else if strings.Contains(ip, "192.168.1.135") {
+					} else if myDeviceType == "projector" || strings.Contains(ip, "192.168.1.136") {
 						myDeviceType = "projector"
 						myIP = ip
 						break
-					} else if strings.Contains(ip, "192.168.1.138") {
+					} else if myDeviceType == "kaw" || strings.Contains(ip, "192.168.1.138") {
 						myDeviceType = "kaw"
 						myIP = ip
 						break
@@ -3717,8 +3814,10 @@ func initDeviceIdentity() {
 			}
 		}
 	} else if myDeviceType == "tx3" && myIP != "" && myIP != "192.168.1.88" && myIP != "192.168.1.140" && myIP != "192.168.1.67" {
-		parts := strings.Split(myIP, ".")
-		myDeviceType = "box_" + parts[len(parts)-1]
+		if _, err := os.Stat("/data/local/dnse_gateway"); err != nil {
+			parts := strings.Split(myIP, ".")
+			myDeviceType = "box_" + parts[len(parts)-1]
+		}
 	}
 	if envType := os.Getenv("VUI_DEV_TYPE"); envType != "" {
 		myDeviceType = envType
@@ -5861,7 +5960,7 @@ const htmlPage = `<!DOCTYPE html>
 </style>
 </head>
 <body>
-<input type="file" id="vui-img-upload" tabindex="-1" multiple style="position:fixed; left:-9999px; top:-9999px; width:1px; height:1px; opacity:0; pointer-events:none;" onfocus="try{this.blur(); if(typeof ensureDesktopImeBridgeFocus==='function')ensureDesktopImeBridgeFocus();}catch(e){}" onchange="handleImageUploadFiles(this.files)">
+<input type="file" id="vui-img-upload" tabindex="-1" multiple style="position:fixed; left:-9999px; top:-9999px; width:1px; height:1px; opacity:0;" onkeydown="event.preventDefault(); event.stopPropagation(); try{this.blur(); if(typeof ensureDesktopImeBridgeFocus==='function')ensureDesktopImeBridgeFocus();}catch(e){}" onchange="handleImageUploadFiles(this.files)">
 
 <!-- Ô nhập cầu nối IME hoàn toàn vô hình đặt ngoài khung xoay .rot-90 để mọi trình duyệt di động luôn cho phép bật bàn phím hệ thống mà không bao giờ hiện khung che màn hình -->
 <div class="smart-input-bar" id="smart-input-bar">
@@ -9940,38 +10039,47 @@ function bindGestures() {
         cancelPendingKeyRepeats();
       }
     }, true);
-    window.addEventListener('keydown', handleGlobalPhysicalKeyDown, false);
+    window.addEventListener('keydown', handleGlobalPhysicalKeyDown, true);
     window.addEventListener('paste', handleGlobalPaste, false);
   }
   var vp = document.getElementById('screen-viewport');
   if (!vp || vp._gesturesBound) return;
   vp._gesturesBound = true;
+
+  function isViewportOverlayTarget(t) {
+    return !!(t && t.closest && t.closest('#wm-top-bar, #wm-nav-cluster, #voice-review-panel, #vui-landscape-kbd, #screen-watermark-source, #screen-watermark-rotate, #screen-watermark-zoom, #screen-sleep-overlay, #screen-offline-notice'));
+  }
   
   vp.addEventListener('touchstart', function(e) {
     lastRealTouchTime = Date.now();
+    if (isViewportOverlayTarget(e.target)) return;
     if (e.cancelable) e.preventDefault();
     onTouchStart(e);
   }, { passive: false });
 
   vp.addEventListener('touchmove', function(e) {
     lastRealTouchTime = Date.now();
+    if (isViewportOverlayTarget(e.target)) return;
     if (e.cancelable) e.preventDefault();
     onTouchMove(e);
   }, { passive: false });
 
   vp.addEventListener('touchend', function(e) {
     lastRealTouchTime = Date.now();
+    if (isViewportOverlayTarget(e.target)) return;
     if (e.cancelable) e.preventDefault();
     onTouchEnd(e);
   }, { passive: false });
 
   vp.addEventListener('touchcancel', function(e) {
     lastRealTouchTime = Date.now();
+    if (isViewportOverlayTarget(e.target)) return;
     onTouchEnd(e);
   }, { passive: true });
 
   vp.addEventListener('mousedown', function(e) {
     if (Date.now() - lastRealTouchTime < 1000) return;
+    if (isViewportOverlayTarget(e.target)) return;
     if (e.cancelable) e.preventDefault();
     ensureDesktopImeBridgeFocus();
     onTouchStart(e);
@@ -10514,15 +10622,14 @@ function submitQuickText(thenEnter) {
 
 function triggerImageUpload() {
   recordActivity();
+  var attBtn = document.getElementById('btn-top-attach');
+  if (attBtn && document.activeElement === attBtn) {
+    try { attBtn.blur(); } catch (e0) {}
+  }
   var fileInp = document.getElementById('vui-img-upload');
   if (!fileInp) return;
   fileInp.value = '';
   fileInp.click();
-  try { fileInp.blur(); } catch (e) {}
-  if (document.activeElement && document.activeElement !== document.getElementById('quick-txt-input')) {
-    try { document.activeElement.blur(); } catch (e2) {}
-  }
-  setTimeout(ensureDesktopImeBridgeFocus, 30);
 }
 
 function convertFileToPngBlob(file, cb) {
@@ -11876,6 +11983,7 @@ func handleCLICommand(args []string) bool {
 }
 
 func main() {
+	initDeviceIdentity()
 	if len(os.Args) > 1 && handleCLICommand(os.Args[1:]) {
 		return
 	}
@@ -12120,8 +12228,11 @@ func main() {
 				if err == nil {
 					conn.Close()
 					dev.Online = true
+				} else if resolveMovedDeviceHost(dev) {
+					dev.Online = true
 				} else {
 					dev.Online = false
+					go discoverMovedPeersOnSubnet()
 				}
 			}(d)
 		}
